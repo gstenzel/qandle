@@ -1,0 +1,39 @@
+[tool.poetry]
+name = "qandle"
+version = "0.0.4"
+description = "QANDLE is a fast and simple quantum state-vector simulator for hybrid machine learning using the PyTorch library."
+authors = ["Gerhard Stenzel <gerhard.stenzel@ifi.lmu.de>"]
+license = "MIT"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+    "Development Status :: 4 - Beta",
+    "Environment :: GPU :: NVIDIA CUDA",
+    "License :: OSI Approved :: MIT License",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Programming Language :: Python",
+]
+
+[tool.poetry.urls]
+documentation = "https://gstenzel.github.io/qandle/"
+repository = "https://github.com/gstenzel/qandle/"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+torch = "^2.0"
+qW-Map = "^0.1.2"
+networkx = "^3"
+einops = "^0.7"
+numpy = "^1.21"
+
+[tool.poetry.group.dev.dependencies]
+openqasm3 = "^0.4"
+PennyLane = "^0.33"
+pytest = "^7.4"
+snakeviz = "^2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
