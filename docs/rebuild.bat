@@ -1,2 +1,2 @@
-sphinx-apidoc --separate -a -o .\source ..\qandle ..\qandle\test
+sphinx-apidoc --separate -a -o .\source ..\src\qandle ..\src\qandle\test
 make html

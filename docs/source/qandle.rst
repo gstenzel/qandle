@@ -23,6 +23,7 @@ Submodules
    qandle.errors
    qandle.measurements
    qandle.operators
+   qandle.qasm
    qandle.qcircuit
    qandle.utils
 
