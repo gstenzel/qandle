@@ -68,6 +68,9 @@ class Circuit(torch.nn.Module):
             if isinstance(layer, operators.CNOT):
                 qubits.add(layer.c)
                 qubits.add(layer.t)
+            elif isinstance(layer, operators.SWAP):
+                qubits.add(layer.a)
+                qubits.add(layer.b)
             elif hasattr(layer, "qubit"):
                 qubits.add(layer.qubit)  # type: ignore
             elif hasattr(layer, "num_qubits"):
@@ -134,11 +137,11 @@ class UnsplittedCircuit(torch.nn.Module):
     @staticmethod
     def _build_layers(layers: list, num_qubits: int) -> typing.List[torch.nn.Module]:
         layers_built = []
-        for l in layers:
-            if hasattr(l, "build"):
-                layers_built.append(l.build(num_qubits=num_qubits))
+        for la in layers:
+            if hasattr(la, "build"):
+                layers_built.append(la.build(num_qubits=num_qubits))
             else:
-                layers_built.append(l)
+                layers_built.append(la)
         return layers_built
 
     def forward(self, state=None, **kwargs):

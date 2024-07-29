@@ -9,11 +9,10 @@ def test_reset_unbatched():
         for qubit in range(num_qubits):
             reset = qandle.Reset(qubit=qubit)
             assert isinstance(reset.__str__(), str)
-            # assert isinstance(reset._to_openqasm2(), str)
+            reset.to_qasm()
             resetb = reset.build(num_qubits=num_qubits)
             assert isinstance(resetb.__str__(), str)
-            # assert isinstance(resetb._to_openqasm2(), str)
-
+            resetb.to_qasm()
             inp = torch.arange(2**num_qubits).to(torch.cfloat) + 0.5 - 0.1j  # non-zero
             inp = inp / torch.linalg.norm(inp)
             inp.requires_grad = True
@@ -73,6 +72,20 @@ def forward_ground_truth(num_w: int, pl_op, inp):
     return qnode().to(torch.cfloat)
 
 
+def test_custom():
+    torch.manual_seed(42)
+    u = qandle.operators.U(qubit=1, matrix=torch.tensor([[1, 0], [0, 1]]))
+    u_b = u.build(num_qubits=3)
+    inp = torch.rand(2**3, dtype=torch.cfloat)
+    inp = inp / torch.linalg.norm(inp)
+    inp.requires_grad = True
+    u_b(inp)
+    assert isinstance(u.__str__(), str)
+    assert isinstance(u_b.__str__(), str)
+    u.to_qasm()
+    u_b.to_qasm()
+
+
 def test_unbatched():
     torch.manual_seed(42)
     v = 0.543321
@@ -94,9 +107,9 @@ def test_unbatched():
                 assert torch.allclose(gt, own)
                 errors.append((gt - own).abs().sum())
                 assert isinstance(own_rx.__str__(), str)
-                # assert isinstance(own_rx._to_openqasm2(), str)
                 assert isinstance(own_rx_u.__str__(), str)
-                # assert isinstance(own_rx_u._to_openqasm2(), str)
+                own_rx.to_qasm()
+                own_rx_u.to_qasm()
             for w2 in range(num_w):
                 if w2 != w:
                     gt = forward_ground_truth(
@@ -130,7 +143,9 @@ def test_batched():
                 (qml.RZ, qandle.operators.RZ),
             ):
                 gt = forward_ground_truth(num_w, lambda: pl_op(v, wires=w), inp)
-                own_rx = own_op(qubit=w, theta=v, remapping=None).build(num_qubits=num_w)
+                own_rx = own_op(qubit=w, theta=v, remapping=None).build(
+                    num_qubits=num_w
+                )
                 own = own_rx(inp)
                 assert torch.allclose(
                     gt, own
@@ -141,8 +156,23 @@ def test_batched():
                     gt = forward_ground_truth(
                         num_w, lambda: qml.CNOT(wires=[w, w2]), inp
                     )
-                    own_cnot = qandle.operators.CNOT(control=w, target=w2).build(num_qubits=num_w)
+                    own_cnot = qandle.operators.CNOT(control=w, target=w2).build(
+                        num_qubits=num_w
+                    )
                     own = own_cnot(inp)
+                    assert torch.allclose(gt, own)
+                    errors.append((gt - own).abs().sum())
+                if w2 != w:
+                    gt = forward_ground_truth(
+                        num_w, lambda: qml.SWAP(wires=[w, w2]), inp
+                    )
+                    own_swap_ = qandle.operators.SWAP(a=w, b=w2)
+                    assert isinstance(own_swap_.__str__(), str)
+                    own_swap_.to_qasm()
+                    own_swap = own_swap_.build(num_qubits=num_w)
+                    assert isinstance(own_swap.__str__(), str)
+                    own_swap.to_qasm()
+                    own = own_swap(inp)
                     assert torch.allclose(gt, own)
                     errors.append((gt - own).abs().sum())
     info = f"errors max: {max(errors)}, avg: {sum(errors)/len(errors)}"

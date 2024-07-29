@@ -60,7 +60,7 @@ class SpecialUnitaryBuilt(ansatz.BuiltAnsatz):
         )
         self.layers = torch.nn.ModuleList(
             [
-                torch.nn.Sequential(*[l.build(num_qubits=num_qubits) for l in lay])
+                torch.nn.Sequential(*[la.build(num_qubits=num_qubits) for la in lay])
                 for lay in layers
             ]
         )

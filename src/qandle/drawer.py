@@ -121,7 +121,7 @@ def _format_splitted(sub_drawing: dict, how=typing.Literal["column", "row"]) -> 
             for k, v in sub_drawing.items()
         }
         for subkey in sub_drawing:
-            longest_line = max([len(l) for l in sub_drawing[subkey].split("\n")])
+            longest_line = max([len(la) for la in sub_drawing[subkey].split("\n")])
             format_str += (
                 "{"
                 + str(subkey)

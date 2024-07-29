@@ -1,3 +1,5 @@
+# ruff: noqa: F403 F401
+
 from .qcircuit import *
 from .measurements import *
 from .embeddings import *
@@ -16,15 +18,19 @@ def __reimport():  # pragma: no cover
     print("reimporting qandle")
     import importlib
     import sys
-    import snakeviz
 
     modules = {k: v for k, v in sys.modules.items()}
     for module in modules:
         if module.startswith("qandle"):
             importlib.reload(sys.modules[module])
 
-    # Patch snakeviz to not show in notebook (always open in new tab)
-    snakeviz.ipymagic._check_ipynb = lambda: False
+    try:
+        # Patch snakeviz to not show in notebook (always open in new tab)
+        import snakeviz
+
+        snakeviz.ipymagic._check_ipynb = lambda: False
+    except ImportError:
+        pass
 
 
 def __count_parameters(model):

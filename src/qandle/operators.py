@@ -16,6 +16,7 @@ __all__ = [
     "RZ",
     "CNOT",
     "Reset",
+    "SWAP",
     "U",
     "CustomGate",
     "BUILT_CLASS_RELATION",
@@ -470,6 +471,53 @@ class Reset(UnbuiltOperator):
         return BUILT_CLASS_RELATION[self.__class__](
             qubit=self.qubit, num_qubits=num_qubits
         )
+
+
+class BuiltSWAP(BuiltOperator):
+    def __init__(self, a: int, b: int, num_qubits: int):
+        super().__init__()
+        self.a = a
+        self.b = b
+        self.num_qubits = num_qubits
+        self.register_buffer(
+            "_M", self._calculate_matrix(a, b, num_qubits), persistent=False
+        )
+
+    @staticmethod
+    def _calculate_matrix(a: int, b: int, num_qubits: int):
+        swap_matrix = torch.eye(2**num_qubits)
+        a, b = num_qubits - a - 1, num_qubits - b - 1
+        for i in range(2**num_qubits):
+            swapped_i = i
+            if ((i >> a) & 1) != ((i >> b) & 1):
+                swapped_i = i ^ ((1 << a) | (1 << b))
+            swap_matrix[i, i] = 0
+            swap_matrix[i, swapped_i] = 1
+        return swap_matrix.to(torch.cfloat)
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        return state @ self._M
+
+    def __str__(self) -> str:
+        return f"SWAP {self.a}|{self.b}"
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return qasm.QasmRepresentation(gate_str=f"swap q[{self.a}], q[{self.b}]")
+
+
+class SWAP(UnbuiltOperator):
+    def __init__(self, a: int, b: int):
+        self.a = a
+        self.b = b
+
+    def __str__(self) -> str:
+        return f"Swap {self.a}|{self.b}"
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return qasm.QasmRepresentation(gate_str=f"swap q[{self.a}], q[{self.b}]")
+
+    def build(self, num_qubits, **kwargs) -> "BuiltSWAP":
+        return BuiltSWAP(a=self.a, b=self.b, num_qubits=num_qubits)
 
 
 class rdict(dict):
