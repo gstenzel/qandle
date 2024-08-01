@@ -157,7 +157,7 @@ def test_reuploading():
     assert torch.allclose(
         bat_1, bat_3
     ), f"batched: {bat_1}, {bat_3}, diff {bat_1-bat_3}"
-    bat_4 = circuit2(inp_unbatched, reupload=v_batched)
+    circuit2(inp_unbatched, reupload=v_batched)
 
 
 def test_batched():
