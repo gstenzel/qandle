@@ -259,6 +259,8 @@ class BuiltParametrizedOperator(BuiltOperator, abc.ABC):
     def get_matrix(self, **kwargs) -> torch.Tensor:
         if self.named:
             t = kwargs[self.name] / 2  # type: ignore # if name is None, named would be False
+            if t.dim() == 1:
+                t = t.unsqueeze(-1).unsqueeze(-1)
         else:
             t = self.remapping(self.theta) / 2
         a_matrix = self._a * self.a_op(t)
@@ -279,7 +281,14 @@ class BuiltParametrizedOperator(BuiltOperator, abc.ABC):
         return matrix.to(torch.cfloat)
 
     def forward(self, state: torch.Tensor, **kwargs) -> torch.Tensor:
-        res = state @ self.get_matrix(**kwargs)
+        mat = self.get_matrix(**kwargs)
+        if mat.dim() == 2:
+            res = state @ mat
+        else:
+            if state.dim() == 1:
+                state = state.unsqueeze(0)
+                # raise ValueError("One of the named matrices received batched input, but the state is not batched. Please batch the state and the named parameters or neither.")
+            res = (state.unsqueeze(1) @ mat).squeeze(1)
         return res
 
     @abc.abstractmethod

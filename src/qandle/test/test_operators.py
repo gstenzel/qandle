@@ -120,12 +120,44 @@ def test_unbatched():
                     own = own_cnot(inp)
                     assert torch.allclose(gt, own)
                     assert isinstance(own_cnot.__str__(), str)
-                    # assert isinstance(own_cnot._to_openqasm2(), str)
                     assert isinstance(own_cnot_u.__str__(), str)
-                    # assert isinstance(own_cnot_u._to_openqasm2(), str)
 
     info = f"errors max: {max(errors)}, avg: {sum(errors)/len(errors)}"
     assert max(errors) < 1e-5, f"Errors too high, {info}"
+
+
+def test_reuploading():
+    q = 3
+    v = torch.tensor(0.123)
+    torch.manual_seed(42)
+    circuit1 = qandle.Circuit(
+        layers=[qandle.RX(qubit=1, theta=v, remapping=None)], num_qubits=q
+    )
+    torch.manual_seed(42)
+    circuit2 = qandle.Circuit(
+        layers=[qandle.RX(qubit=1, name="reupload", remapping=None)], num_qubits=q
+    )
+    inp_unbatched = torch.rand(2**q, dtype=torch.cfloat)
+    inp_unbatched = inp_unbatched / torch.linalg.norm(inp_unbatched)
+    unb_1 = circuit1(inp_unbatched)
+    unb_2 = circuit2(inp_unbatched, reupload=v)
+    assert torch.allclose(
+        unb_1, unb_2
+    ), f"unbatched: {unb_1}, {unb_2}, diff {unb_1-unb_2}"
+
+    inp_batched = torch.rand(7, 2**q, dtype=torch.cfloat)
+    inp_batched = inp_batched / torch.linalg.norm(inp_batched, dim=-1, keepdim=True)
+    bat_1 = circuit1(inp_batched)
+    bat_2 = circuit2(inp_batched, reupload=v)
+    assert torch.allclose(
+        bat_1, bat_2
+    ), f"batched: {bat_1}, {bat_2}, diff {bat_1-bat_2}"
+    v_batched = torch.tensor([v, v, v, v, v, v, v])
+    bat_3 = circuit2(inp_batched, reupload=v_batched)
+    assert torch.allclose(
+        bat_1, bat_3
+    ), f"batched: {bat_1}, {bat_3}, diff {bat_1-bat_3}"
+    bat_4 = circuit2(inp_unbatched, reupload=v_batched)
 
 
 def test_batched():

@@ -78,3 +78,12 @@ def test_splitter_small():
     check_qasm.check(orig_c_big)
     check_qasm.check(split_t2)
     check_qasm.check(split_t3)
+
+
+def test_circuit_dummy():
+    c = qandle.Circuit(
+        split_max_qubits=2,
+        layers=[qandle.RX(0), qandle.CNOT(0, 2), qandle.RY(1), qandle.CNOT(1, 2)],
+    )
+    assert isinstance(c.circuit, qandle.qcircuit.SplittedCircuit)
+    assert len(c.circuit.subcircuits) == 2

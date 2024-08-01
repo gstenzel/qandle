@@ -22,8 +22,5 @@ Run tests using
 
 .. code-block:: console
 
-   $ pytest qandle --cov=qandle --cov-report=html -W error \
-    -W ignore::PendingDeprecationWarning:semantic_version.base \
-    -W ignore::DeprecationWarning \
-    -W ignore::pytest_cov.plugin.CovDisabledWarning
+   $ pytest --cov=qandle --cov-report=html -W error  -W ignore::PendingDeprecationWarning:semantic_version.base -W ignore::DeprecationWarning  -W ignore::pytest_cov.plugin.CovDisabledWarning
 
