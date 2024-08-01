@@ -27,15 +27,19 @@ qW-Map = "^0.1.2"
 networkx = "^3"
 einops = "^0.7"
 numpy = "^1.21"
+openqasm3 = {extras = ["parser"], version = "^1.0.0"}
 
 [tool.poetry.group.dev.dependencies]
-openqasm3 = "^0.4"
 PennyLane = "^0.33"
 pytest = "^7.4"
+pytest-cov = "^5.0.0"
 snakeviz = "^2.2"
 sphinx = "^7.4.7"
 myst-nb = "^1.1.1"
 sphinx-rtd-theme = "^2.0.0"
+
+[tool.pytest.ini_options]
+testpaths = ["src/qandle/",]
 
 [build-system]
 requires = ["poetry-core"]
