@@ -1,0 +1,42 @@
+name: Python Publish
+
+on:
+  push:
+    tags:
+      - 'v*'
+        
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", ]
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'poetry'
+    - name: Install poetry
+      run: |
+        pip install poetry
+    - name: Install dependencies
+      run: |
+        poetry install --with dev
+    - name: Build package
+      run: |
+        poetry build
+  publish:
+    needs: build
+    name: Publish package
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/qandle/
+    steps:
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          username: __token__
