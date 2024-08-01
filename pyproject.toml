@@ -37,6 +37,7 @@ snakeviz = "^2.2"
 sphinx = "^7.4.7"
 myst-nb = "^1.1.1"
 sphinx-rtd-theme = "^2.0.0"
+ruff = "^0.5.5"
 
 [tool.pytest.ini_options]
 testpaths = ["src/qandle/",]
