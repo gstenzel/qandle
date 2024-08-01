@@ -21,7 +21,7 @@ documentation = "https://gstenzel.github.io/qandle/"
 repository = "https://github.com/gstenzel/qandle/"
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 torch = "^2.0"
 qW-Map = "^0.1.2"
 networkx = "^3"
