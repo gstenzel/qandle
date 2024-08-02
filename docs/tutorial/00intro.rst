@@ -16,11 +16,8 @@ Install from pip using
 Manual Installation for Development
 -----------------------------------
 
-**qandle** depends on PyTorch, einops, :code:`qW_Map` and NetworkX. To install the required packages manually, run :code:`pip install -r requirements.txt`
-To install **qandle** manually, clone the repository and run :code:`pip install .` from the root directory.
-Run tests using 
+**qandle** depends on :code:`PyTorch`, :code:`einops`, :code:`qW_Map` and :code:`NetworkX`.
 
-.. code-block:: console
-
-   $ pytest --cov=qandle --cov-report=html -W error  -W ignore::PendingDeprecationWarning:semantic_version.base -W ignore::DeprecationWarning  -W ignore::pytest_cov.plugin.CovDisabledWarning
-
+To install **qandle** manually, clone the repository and install :code:`poetry` and :code:`poethepoet` using :code:`pip install poetry poethepoet`. 
+Then, run :code:`poetry install` in the root directory of the repository.
+Tests can be run using :code:`poe test`. The documentation can be built using :code:`poe doc`.

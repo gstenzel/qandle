@@ -42,6 +42,13 @@ ruff = "^0.5.5"
 [tool.pytest.ini_options]
 testpaths = ["src/qandle/",]
 
+[tool.poe.tasks]
+test = "pytest --cov=qandle --cov-report=html -W error -W ignore::PendingDeprecationWarning:semantic_version.base -W ignore::DeprecationWarning -W ignore::pytest_cov.plugin.CovDisabledWarning"
+_createautodoc = "sphinx-apidoc --separate -a -o ./docs/source ./src/qandle ./src/qandle/test"
+_sphinxbuild = "sphinx-build -M html ./docs/ ./docs/build"
+doc = ["_createautodoc", "_sphinxbuild"]
+format = "ruff check --output-format=github"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
