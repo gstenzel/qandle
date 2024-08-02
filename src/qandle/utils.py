@@ -24,9 +24,7 @@ def do_not_implement(*protected, reason="") -> type:
                     if reason:
                         raise AttributeError(reason)
                     else:
-                        raise AttributeError(
-                            f'Overiding of attribute "{attribute}" not allowed'
-                        )
+                        raise AttributeError(f'Overiding of attribute "{attribute}" not allowed')
             return super().__new__(cls, name, bases, attrs)
 
     return LimitedClass
@@ -70,9 +68,7 @@ def __analyze_barren_plateu(
 
     import torch
 
-    possible_params = torch.linspace(
-        -torch.pi, torch.pi, num_points, requires_grad=True
-    )
+    possible_params = torch.linspace(-torch.pi, torch.pi, num_points, requires_grad=True)
     zerosd = {
         k: torch.ones_like(v, requires_grad=True) + other_params
         for k, v in circuit.state_dict().items()

@@ -10,8 +10,8 @@ sys.path.insert(0, os.path.abspath("./.."))
 sys.path.insert(0, os.path.abspath("./../src"))
 # sys.path.insert(0, os.path.abspath("./../.."))
 
-import myst_nb # type: ignore # noqa: F401
-import sphinx_rtd_theme # type: ignore # noqa: F401
+import myst_nb  # type: ignore # noqa: F401
+import sphinx_rtd_theme  # type: ignore # noqa: F401
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
@@ -45,7 +45,5 @@ html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
 html_logo = "_static/qandle_logo.jpg"
 
-html_sidebars = {
-    "**": ["globaltoc.html", "relations.html", "sourcelink.html", "searchbox.html"]
-}
+html_sidebars = {"**": ["globaltoc.html", "relations.html", "sourcelink.html", "searchbox.html"]}
 nb_execution_excludepatterns = "**test**", "**build**", "**/jupyter_execute/**"

@@ -36,15 +36,11 @@ class TwoLocal(ansatz.UnbuiltAnsatz):
         return "TL"
 
     def to_qasm(self) -> str:
-        return [g.to_qasm() for g in self.decompose()] # type: ignore
+        return [g.to_qasm() for g in self.decompose()]  # type: ignore
 
     def decompose(self) -> typing.List[op.Operator]:
         res = []
-        qp = (
-            self.q_params
-            if self.q_params is not None
-            else torch.rand(self.depth, self.num_qubits)
-        )
+        qp = self.q_params if self.q_params is not None else torch.rand(self.depth, self.num_qubits)
         for d in range(self.depth):
             for w in range(self.num_qubits):
                 res.append(op.RY(qubit=w, theta=qp[d, w]))
@@ -67,14 +63,9 @@ class TwoLocalBuilt(ansatz.BuiltAnsatz):
         self.remapping = remapping
         if q_params is None or q_params.shape != (depth, num_qubits):
             q_params = torch.rand(depth, num_qubits)
-        self.register_buffer(
-            "cnot_matrices", self._get_cnot_matrix(num_qubits), persistent=False
-        )
+        self.register_buffer("cnot_matrices", self._get_cnot_matrix(num_qubits), persistent=False)
         layers = [
-            [
-                op.RY(qubit=w, theta=q_params[d, w]).build(num_qubits)
-                for w in range(num_qubits)
-            ]
+            [op.RY(qubit=w, theta=q_params[d, w]).build(num_qubits) for w in range(num_qubits)]
             for d in range(depth)
         ]
         self.mods = torch.nn.ModuleList([torch.nn.Sequential(*lay) for lay in layers])
@@ -105,7 +96,7 @@ class TwoLocalBuilt(ansatz.BuiltAnsatz):
             outp.extend([g.to_qasm() for g in self.mods[d]])
             for c in range(self.num_qubits - 1):
                 outp.append(op.CNOT(c, c + 1).to_qasm())
-        return outp # type: ignore
+        return outp  # type: ignore
 
     def decompose(self) -> typing.List[op.UnbuiltOperator]:
         outp = []

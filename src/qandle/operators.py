@@ -22,9 +22,7 @@ __all__ = [
     "BUILT_CLASS_RELATION",
 ]
 
-matrixbuilder = typing.Tuple[
-    torch.Tensor, torch.Tensor, typing.Callable, typing.Callable
-]
+matrixbuilder = typing.Tuple[torch.Tensor, torch.Tensor, typing.Callable, typing.Callable]
 
 
 class AbstractNoForward(abc.ABCMeta, utils.do_not_implement("forward", "backward")):
@@ -224,9 +222,7 @@ class BuiltParametrizedOperator(BuiltOperator, abc.ABC):
         self.num_qubits = num_qubits
         self.unbuilt_class = BUILT_CLASS_RELATION.T[self.__class__]
 
-        self.register_buffer(
-            "_i", torch.tensor(1j, dtype=torch.cfloat), persistent=False
-        )
+        self.register_buffer("_i", torch.tensor(1j, dtype=torch.cfloat), persistent=False)
         a, b, self.a_op, self.b_op = self.matrix_builder()
         self.register_buffer("_a", a.T.contiguous(), persistent=False)
         self.register_buffer("_b", b.T.contiguous(), persistent=False)
@@ -472,9 +468,7 @@ class Reset(UnbuiltOperator):
         return qasm.QasmRepresentation(gate_str="reset", qubit=self.qubit)
 
     def build(self, num_qubits, **kwargs) -> "BuiltReset":
-        return BUILT_CLASS_RELATION[self.__class__](
-            qubit=self.qubit, num_qubits=num_qubits
-        )
+        return BUILT_CLASS_RELATION[self.__class__](qubit=self.qubit, num_qubits=num_qubits)
 
 
 class BuiltSWAP(BuiltOperator):
@@ -483,9 +477,7 @@ class BuiltSWAP(BuiltOperator):
         self.a = a
         self.b = b
         self.num_qubits = num_qubits
-        self.register_buffer(
-            "_M", self._calculate_matrix(a, b, num_qubits), persistent=False
-        )
+        self.register_buffer("_M", self._calculate_matrix(a, b, num_qubits), persistent=False)
 
     @staticmethod
     def _calculate_matrix(a: int, b: int, num_qubits: int):

@@ -86,6 +86,4 @@ def test_su():
                 assert isinstance(su.decompose(), list)
                 # assert isinstance(su._to_openqasm2(), str)
                 assert isinstance(su.__str__(), str)
-                assert len(su.decompose()) == len(rots) * num_w * (1 + reps) + reps * (
-                    num_w - 1
-                )
+                assert len(su.decompose()) == len(rots) * num_w * (1 + reps) + reps * (num_w - 1)

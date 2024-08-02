@@ -25,7 +25,7 @@ python = "^3.10"
 torch = "^2.0"
 qW-Map = "^0.1.2"
 networkx = "^3"
-einops = "^0.7"
+einops = "^0.8"
 numpy = "^1.21"
 openqasm3 = {extras = ["parser"], version = "^1.0.0"}
 
@@ -48,6 +48,12 @@ _createautodoc = "sphinx-apidoc --separate -a -o ./docs/source ./src/qandle ./sr
 _sphinxbuild = "sphinx-build -M html ./docs/ ./docs/build"
 doc = ["_createautodoc", "_sphinxbuild"]
 format = "ruff check --output-format=github"
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.format]
+line-ending = "auto"
 
 [build-system]
 requires = ["poetry-core"]

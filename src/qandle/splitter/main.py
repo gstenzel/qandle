@@ -32,7 +32,9 @@ def _construct_graph(circuit) -> nx.DiGraph:
         if isinstance(layer, cnot_types):
             nodes.append(grouping.Node(layer.c, layer.t, i))
 
-    _txt = "No CNOTs in the circuit, instead of splitting, just use separate circuits for each qubit"
+    _txt = (
+        "No CNOTs in the circuit, instead of splitting, just use separate circuits for each qubit"
+    )
     assert len(nodes) > 0, _txt
     used_qubits = set(n.c for n in nodes) | set(n.t for n in nodes)
     _txt = "Circuit has qubits not used in CNOTs. Instead of splitting, just use separate circuits for separate qubits."
@@ -79,9 +81,7 @@ def _assign_to_subcircuits(
                     next_cnode_index = i
                     break
         nearest_cnot_index = (
-            previous_cnode_index
-            if previous_cnode_index is not None
-            else next_cnode_index
+            previous_cnode_index if previous_cnode_index is not None else next_cnode_index
         )
         assert nearest_cnot_index is not None, f"Error. \n\
             original circuit {original_circuit_layers}\n\

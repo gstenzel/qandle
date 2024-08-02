@@ -10,8 +10,7 @@ import qandle.qasm as qasm
 
 class InputOperator(op.BuiltOperator, abc.ABC):
     @abc.abstractmethod
-    def to_qasm(self) -> qasm.QasmRepresentation:
-        ...
+    def to_qasm(self) -> qasm.QasmRepresentation: ...
 
     def decompose(self):
         raise NotImplementedError(f"Decomposing {self.__class__} is not yet supported")
@@ -88,9 +87,7 @@ class AngleEmbedding(InputOperator):
 
     @staticmethod
     def _get_rot_matrices(rot, num_qubits):
-        gates = [
-            rot(qubit=w, remapping=None).build(num_qubits) for w in range(num_qubits)
-        ]
+        gates = [rot(qubit=w, remapping=None).build(num_qubits) for w in range(num_qubits)]
         a = [g._a.T for g in gates]
         b = [g._b.T for g in gates]
         a = torch.stack(a, dim=0)

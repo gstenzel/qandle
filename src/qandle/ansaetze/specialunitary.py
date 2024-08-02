@@ -26,7 +26,7 @@ class SpecialUnitary(ansatz.UnbuiltAnsatz):
         return "SU"
 
     def to_qasm(self) -> qasm.QasmRepresentation:
-        return [g.to_qasm() for g in self.decompose()] # type: ignore
+        return [g.to_qasm() for g in self.decompose()]  # type: ignore
 
     def decompose(self) -> List[op.Operator]:
         outp = []
@@ -87,7 +87,7 @@ class SpecialUnitaryBuilt(ansatz.BuiltAnsatz):
         return "SU"
 
     def to_qasm(self) -> qasm.QasmRepresentation:
-        return [g.to_qasm() for g in self.decompose()] # type: ignore
+        return [g.to_qasm() for g in self.decompose()]  # type: ignore
 
     def decompose(self) -> List[op.Operator]:
         res = []

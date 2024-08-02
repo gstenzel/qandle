@@ -62,9 +62,7 @@ class StronglyEntanglingLayer(UnbuiltAnsatz):
                         )
                     )
             layers.extend(
-                StronglyEntanglingLayerBuilt._get_cnots(
-                    self.num_qubits, d % (self.num_qubits - 1)
-                )
+                StronglyEntanglingLayerBuilt._get_cnots(self.num_qubits, d % (self.num_qubits - 1))
             )
         return layers
 
@@ -88,7 +86,9 @@ class StronglyEntanglingLayerBuilt(BuiltAnsatz):
                 for r in range(len(self.rots)):
                     layers.append(
                         self.rots[r](
-                            qubit=w, theta=q_params[d, w, r], remapping=remapping # type: ignore
+                            qubit=w,
+                            theta=q_params[d, w, r],
+                            remapping=remapping,  # type: ignore
                         ).build(num_qubits)
                     )
             layers.extend(self._get_cnots(self.num_qubits, d % (self.num_qubits - 1)))
@@ -110,7 +110,7 @@ class StronglyEntanglingLayerBuilt(BuiltAnsatz):
         return "SEL"
 
     def to_qasm(self) -> str:
-        return [g.to_qasm() for g in self.decompose()] # type: ignore
+        return [g.to_qasm() for g in self.decompose()]  # type: ignore
 
     def decompose(self) -> typing.List[op.UnbuiltOperator]:
         layers = []

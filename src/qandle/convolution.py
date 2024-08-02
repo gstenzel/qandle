@@ -20,9 +20,7 @@ class QConv(torch.nn.Module):
         self.out_channels = out_channels
         self.qdepth = qdepth
         self.kernel_size = (
-            kernel_size
-            if isinstance(kernel_size, tuple)
-            else (kernel_size, kernel_size)
+            kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
         )
         self.padding = padding if isinstance(padding, tuple) else (padding, padding)
         self.unfold = torch.nn.Unfold(kernel_size=kernel_size, padding=self.padding)
@@ -53,9 +51,7 @@ class QConv(torch.nn.Module):
         h_out = h_in + 2 * self.padding[0] - self.kernel_size[0] + 1  # output height
         w_out = w_in + 2 * self.padding[1] - self.kernel_size[1] + 1  # output width
         if c_in != self.in_channels:
-            raise ValueError(
-                f"Input channels {c_in} does not match in_channels {self.in_channels}"
-            )
+            raise ValueError(f"Input channels {c_in} does not match in_channels {self.in_channels}")
         x = self.unfold(x)
         x = einops.rearrange(x, self.ein1)
         x = x + self.almost_zero  # avoid zero input

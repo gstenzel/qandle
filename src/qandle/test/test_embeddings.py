@@ -61,6 +61,7 @@ def test_angle_embedding_x3():
     out = emb(inp)
     assert torch.allclose(out, pl_out)
 
+
 def test_angle_embedding_x3_batched():
     w = 3
     inp = torch.rand(10, w).to(torch.float) + 0.5
@@ -76,7 +77,6 @@ def test_angle_embedding_x3_batched():
     assert torch.allclose(out, pl_out)
 
 
-
 def test_angle_embedding_y4():
     w = 4
     inp = torch.arange(w).to(torch.float) + 2.5
@@ -90,6 +90,7 @@ def test_angle_embedding_y4():
     emb = embeddings.AngleEmbedding(num_qubits=w, rotation="y")
     out = emb(inp)
     assert torch.allclose(out, pl_out)
+
 
 def test_angle_embedding_y4_batched():
     w = 4
@@ -119,6 +120,7 @@ def test_angle_embedding_z5():
     emb = embeddings.AngleEmbedding(num_qubits=w, rotation="z")
     out = emb(inp)
     assert torch.allclose(out, pl_out)
+
 
 def test_angle_embedding_z5_batched():
     w = 5

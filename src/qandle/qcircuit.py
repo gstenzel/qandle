@@ -90,7 +90,9 @@ class Circuit(torch.nn.Module):
             else:
                 raise ValueError(f"Unknown layer type {type(layer)}")
         if len(qubits) == 0:
-            raise ValueError("Number of qubits could not be inferred from layers. Please provide num_qubits to the circuit directly.")
+            raise ValueError(
+                "Number of qubits could not be inferred from layers. Please provide num_qubits to the circuit directly."
+            )
         return qubits
 
     def draw(self):
@@ -110,9 +112,7 @@ class Circuit(torch.nn.Module):
             return self
 
     def decompose(self):
-        return Circuit(
-            layers=[], num_qubits=self.num_qubits, circuit=self.circuit.decompose()
-        )
+        return Circuit(layers=[], num_qubits=self.num_qubits, circuit=self.circuit.decompose())
 
     def to_qasm(self):
         return self.circuit.to_qasm()
@@ -212,9 +212,7 @@ class SplittedCircuit(UnsplittedCircuit):
 
         self.subcircuits = torch.nn.ModuleList(
             [
-                Subcircuit(
-                    num_qubits, subcircuitdict[i].mapping, subcircuitdict[i].layers
-                )
+                Subcircuit(num_qubits, subcircuitdict[i].mapping, subcircuitdict[i].layers)
                 for i in subcircuitdict
             ]
         )
@@ -243,9 +241,7 @@ class Subcircuit(torch.nn.Module):
     Submodule for CuttedCircuit, contains a single subcircuits
     """
 
-    def __init__(
-        self, num_qubits_parent: int, mapping: typing.Dict[int, int], layers: list
-    ):
+    def __init__(self, num_qubits_parent: int, mapping: typing.Dict[int, int], layers: list):
         """
         num_qubits_parent: number of qubits in the parent circuit
         mapping: mapping of qubits from parent circuit to subcircuit

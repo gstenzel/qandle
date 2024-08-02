@@ -40,8 +40,7 @@ def draw(circuit) -> str:
 
                 # longest line between control and target (including control/target)
                 longest = max(
-                    len(qubits[li])
-                    for li in range(min(gate.c, gate.t), max(gate.c, gate.t) + 1)
+                    len(qubits[li]) for li in range(min(gate.c, gate.t), max(gate.c, gate.t) + 1)
                 )
 
                 if config.DRAW_SHIFT_LEFT:
@@ -79,9 +78,7 @@ def _draw_text_splitted(circuit) -> str:
     qubits = [f"q{i}" for i in range(num_qubits)]
     sub_drawings = {}
     for subkey, sub in enumerate(circuit.subcircuits):
-        stretch = list(
-            sub.mapping.keys()
-        )  # list of qubits the subcircuit is applied to
+        stretch = list(sub.mapping.keys())  # list of qubits the subcircuit is applied to
         _all_w = set(range(num_qubits))
         for w in stretch:
             qubits[w] += "-" + placeholder.format(subkey)
@@ -91,9 +88,7 @@ def _draw_text_splitted(circuit) -> str:
         sub_drawings[subkey] = (
             placeholder.format(subkey)
             + "\n"
-            + draw(
-                qcircuit.UnsplittedCircuit(num_qubits=len(stretch), layers=sub.layers)
-            )
+            + draw(qcircuit.UnsplittedCircuit(num_qubits=len(stretch), layers=sub.layers))
         )
     for w in range(num_qubits):
         qubits[w] += "-"
@@ -117,17 +112,12 @@ def _format_splitted(sub_drawing: dict, how=typing.Literal["column", "row"]) -> 
             [len(subv.split("\n")) for subv in sub_drawing.values()]
         )
         sub_drawing = {
-            k: v + "\n" * (longest_block - len(v.split("\n")))
-            for k, v in sub_drawing.items()
+            k: v + "\n" * (longest_block - len(v.split("\n"))) for k, v in sub_drawing.items()
         }
         for subkey in sub_drawing:
             longest_line = max([len(la) for la in sub_drawing[subkey].split("\n")])
             format_str += (
-                "{"
-                + str(subkey)
-                + ":<"
-                + str(longest_line + config.DRAW_SPLITTED_PAD)
-                + "}"
+                "{" + str(subkey) + ":<" + str(longest_line + config.DRAW_SPLITTED_PAD) + "}"
             )
         for line in zip(*[s.split("\n") for s in sub_drawing.values()]):
             result += format_str.format(*line) + "\n"

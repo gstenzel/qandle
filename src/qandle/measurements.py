@@ -17,9 +17,7 @@ class BuiltMeasurement(op.BuiltOperator):
         f = "measure q[{}] -> c[{}]"
         i = hash(random.random())
         return [
-            qasm.QasmRepresentation(
-                gate_str=f.format(w, w), qasm3_outputs=f"measured_{i}_{w}"
-            )
+            qasm.QasmRepresentation(gate_str=f.format(w, w), qasm3_outputs=f"measured_{i}_{w}")
             for w in range(self.num_qubits)
         ]  # type: ignore
 
@@ -29,7 +27,7 @@ class BuiltMeasurement(op.BuiltOperator):
             RuntimeWarning,
         )
 
-        class SingleQubitMeasurementDummy(op.UnbuiltOperator,torch.nn.Module):
+        class SingleQubitMeasurementDummy(op.UnbuiltOperator, torch.nn.Module):
             def __init__(self, qubit: int):
                 self.qubit = qubit
                 super().__init__()
@@ -60,9 +58,7 @@ class UnbuiltMeasurement(op.UnbuiltOperator):
         return "M"
 
     def to_qasm(self) -> str:
-        raise UnbuiltGateError(
-            f"Unbuilt {self.__class__.__name__} cannot be converted to qasm."
-        )
+        raise UnbuiltGateError(f"Unbuilt {self.__class__.__name__} cannot be converted to qasm.")
 
     def build(self, num_qubits: int, **kwargs) -> BuiltMeasurement:
         return BUILT_CLASS_RELATION[self.__class__](num_qubits=num_qubits, **kwargs)  # type: ignore

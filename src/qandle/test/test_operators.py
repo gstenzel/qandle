@@ -24,9 +24,7 @@ def test_reset_unbatched():
             else:
                 err = f"qubit: {qubit}, num_qubits: {num_qubits}, probs_before: {probs_before}, probs_after: {probs_after}"
                 assert torch.allclose(probs_before[:qubit], probs_after[:qubit]), err
-                assert torch.allclose(
-                    probs_before[qubit + 1 :], probs_after[qubit + 1 :]
-                ), err
+                assert torch.allclose(probs_before[qubit + 1 :], probs_after[qubit + 1 :]), err
                 assert torch.allclose(probs_after[qubit], torch.tensor(1.0)), err
             assert out.requires_grad
             assert torch.allclose(torch.norm(out), torch.tensor(1.0))
@@ -48,9 +46,7 @@ def test_reset_batched():
                 assert torch.allclose(probs_after, torch.tensor(1.0))
             else:
                 err = f"qubit: {qubit}, num_qubits: {num_qubits}, probs_before: {probs_before}, probs_after: {probs_after}"
-                assert torch.allclose(
-                    probs_before[..., :qubit], probs_after[..., :qubit]
-                ), err
+                assert torch.allclose(probs_before[..., :qubit], probs_after[..., :qubit]), err
                 assert torch.allclose(
                     probs_before[..., qubit + 1 :], probs_after[..., qubit + 1 :]
                 ), err
@@ -112,9 +108,7 @@ def test_unbatched():
                 own_rx_u.to_qasm()
             for w2 in range(num_w):
                 if w2 != w:
-                    gt = forward_ground_truth(
-                        num_w, lambda: qml.CNOT(wires=[w, w2]), inp
-                    )
+                    gt = forward_ground_truth(num_w, lambda: qml.CNOT(wires=[w, w2]), inp)
                     own_cnot_u = qandle.operators.CNOT(control=w, target=w2)
                     own_cnot = own_cnot_u.build(num_qubits=num_w)
                     own = own_cnot(inp)
@@ -130,9 +124,7 @@ def test_reuploading():
     q = 3
     v = torch.tensor(0.123)
     torch.manual_seed(42)
-    circuit1 = qandle.Circuit(
-        layers=[qandle.RX(qubit=1, theta=v, remapping=None)], num_qubits=q
-    )
+    circuit1 = qandle.Circuit(layers=[qandle.RX(qubit=1, theta=v, remapping=None)], num_qubits=q)
     torch.manual_seed(42)
     circuit2 = qandle.Circuit(
         layers=[qandle.RX(qubit=1, name="reupload", remapping=None)], num_qubits=q
@@ -141,22 +133,16 @@ def test_reuploading():
     inp_unbatched = inp_unbatched / torch.linalg.norm(inp_unbatched)
     unb_1 = circuit1(inp_unbatched)
     unb_2 = circuit2(inp_unbatched, reupload=v)
-    assert torch.allclose(
-        unb_1, unb_2
-    ), f"unbatched: {unb_1}, {unb_2}, diff {unb_1-unb_2}"
+    assert torch.allclose(unb_1, unb_2), f"unbatched: {unb_1}, {unb_2}, diff {unb_1-unb_2}"
 
     inp_batched = torch.rand(7, 2**q, dtype=torch.cfloat)
     inp_batched = inp_batched / torch.linalg.norm(inp_batched, dim=-1, keepdim=True)
     bat_1 = circuit1(inp_batched)
     bat_2 = circuit2(inp_batched, reupload=v)
-    assert torch.allclose(
-        bat_1, bat_2
-    ), f"batched: {bat_1}, {bat_2}, diff {bat_1-bat_2}"
+    assert torch.allclose(bat_1, bat_2), f"batched: {bat_1}, {bat_2}, diff {bat_1-bat_2}"
     v_batched = torch.tensor([v, v, v, v, v, v, v])
     bat_3 = circuit2(inp_batched, reupload=v_batched)
-    assert torch.allclose(
-        bat_1, bat_3
-    ), f"batched: {bat_1}, {bat_3}, diff {bat_1-bat_3}"
+    assert torch.allclose(bat_1, bat_3), f"batched: {bat_1}, {bat_3}, diff {bat_1-bat_3}"
     circuit2(inp_unbatched, reupload=v_batched)
 
 
@@ -175,9 +161,7 @@ def test_batched():
                 (qml.RZ, qandle.operators.RZ),
             ):
                 gt = forward_ground_truth(num_w, lambda: pl_op(v, wires=w), inp)
-                own_rx = own_op(qubit=w, theta=v, remapping=None).build(
-                    num_qubits=num_w
-                )
+                own_rx = own_op(qubit=w, theta=v, remapping=None).build(num_qubits=num_w)
                 own = own_rx(inp)
                 assert torch.allclose(
                     gt, own
@@ -185,19 +169,13 @@ def test_batched():
                 errors.append((gt - own).abs().sum())
             for w2 in range(num_w):
                 if w2 != w:
-                    gt = forward_ground_truth(
-                        num_w, lambda: qml.CNOT(wires=[w, w2]), inp
-                    )
-                    own_cnot = qandle.operators.CNOT(control=w, target=w2).build(
-                        num_qubits=num_w
-                    )
+                    gt = forward_ground_truth(num_w, lambda: qml.CNOT(wires=[w, w2]), inp)
+                    own_cnot = qandle.operators.CNOT(control=w, target=w2).build(num_qubits=num_w)
                     own = own_cnot(inp)
                     assert torch.allclose(gt, own)
                     errors.append((gt - own).abs().sum())
                 if w2 != w:
-                    gt = forward_ground_truth(
-                        num_w, lambda: qml.SWAP(wires=[w, w2]), inp
-                    )
+                    gt = forward_ground_truth(num_w, lambda: qml.SWAP(wires=[w, w2]), inp)
                     own_swap_ = qandle.operators.SWAP(a=w, b=w2)
                     assert isinstance(own_swap_.__str__(), str)
                     own_swap_.to_qasm()

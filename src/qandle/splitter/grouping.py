@@ -27,9 +27,7 @@ def groupnodes(G: nx.DiGraph, max_qubits):
     return G
 
 
-def groupnodes_max_qubits_per_subcircuit(
-    sub_g: nx.DiGraph, max_qubits: int
-) -> nx.DiGraph:
+def groupnodes_max_qubits_per_subcircuit(sub_g: nx.DiGraph, max_qubits: int) -> nx.DiGraph:
     assert max_qubits >= 2, "max_qubits must be >= 2"
 
     def get_start():
