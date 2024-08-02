@@ -440,12 +440,7 @@ class BuiltReset(BuiltOperator):
         super().__init__()
         self.qubit = qubit
         self.num_qubits = num_qubits
-        self.to_matrix = einl.Rearrange(
-            "batch (a ax b) -> batch (a b) ax", ax=2, a=2**qubit
-        )
-        self.to_state = einl.Rearrange(
-            "batch (a b) ax -> batch (a ax b)", ax=2, a=2**qubit
-        )
+        self.to_matrix, self.to_state = utils.get_matrix_transforms(num_qubits, [qubit])
 
     def forward(self, state: torch.Tensor):
         unbatched = state.dim() == 1

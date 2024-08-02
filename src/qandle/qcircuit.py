@@ -3,6 +3,7 @@ from qandle import drawer
 from qandle import splitter
 from qandle import operators
 from qandle import qasm
+from qandle import utils
 import warnings
 import typing
 import einops.layers.torch as einl
@@ -75,6 +76,9 @@ class Circuit(torch.nn.Module):
                 qubits.add(layer.qubit)  # type: ignore
             elif hasattr(layer, "num_qubits"):
                 qubits.update(range(layer.num_qubits))  # type: ignore
+            elif hasattr(layer, "qubits"):
+                if qubits:
+                    qubits.update(layer.qubits)
             elif isinstance(
                 layer,
                 (
@@ -85,6 +89,8 @@ class Circuit(torch.nn.Module):
                 pass  # ignore measurements, as they act on all qubits anyway
             else:
                 raise ValueError(f"Unknown layer type {type(layer)}")
+        if len(qubits) == 0:
+            raise ValueError("Number of qubits could not be inferred from layers. Please provide num_qubits to the circuit directly.")
         return qubits
 
     def draw(self):
@@ -249,35 +255,11 @@ class Subcircuit(torch.nn.Module):
         self.num_qubits_parent = num_qubits_parent
         self.mapping = mapping
         layers_built = UnsplittedCircuit._build_layers(layers, num_qubits=len(mapping))
-        pat1, pat2, args = self._generate_patterns(num_qubits_parent, mapping)
-        self.to_matrix = einl.Rearrange(pat1, **args)
-        self.to_state = einl.Rearrange(pat2, **args)
-        self.layers = torch.nn.ModuleList(layers_built)
-
-    @staticmethod
-    def _generate_patterns(
-        num_qubits: int, mapping: typing.Dict[int, int]
-    ) -> typing.Tuple[str, str, dict]:
-        """
-        Generate patterns for einops.rearrange to convert between state and matrix.
-        """
-        qubits_in_subc = ["a" + str(i) for i in mapping.keys()]
-        qubits_not_in_subc = [
-            "a" + str(i) for i in range(num_qubits) if i not in mapping
-        ]
-        all_qubits = ["a" + str(i) for i in range(num_qubits)]
-        state_pattern = "batch (" + " ".join(all_qubits) + ")"
-        matrix_pattern = (
-            "(batch "
-            + " ".join(qubits_not_in_subc)
-            + ") ("
-            + " ".join(qubits_in_subc)
-            + ")"
+        self.to_matrix, self.to_state = utils.get_matrix_transforms(
+            num_qubits_parent, list(mapping.keys())
         )
-        to_matrix_pattern = state_pattern + " -> " + matrix_pattern
-        to_state_pattern = matrix_pattern + " -> " + state_pattern
-        args = {"a" + str(i): 2 for i in range(num_qubits)}
-        return to_matrix_pattern, to_state_pattern, args
+
+        self.layers = torch.nn.ModuleList(layers_built)
 
     def forward(self, x, **kwargs):
         batched = x.ndim == 2

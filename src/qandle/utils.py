@@ -1,3 +1,7 @@
+import typing
+import einops.layers.torch as einl
+
+
 def parse_rot(rot: str):
     from . import operators as op
 
@@ -26,6 +30,25 @@ def do_not_implement(*protected, reason="") -> type:
             return super().__new__(cls, name, bases, attrs)
 
     return LimitedClass
+
+
+def get_matrix_transforms(
+    num_qubits: int, in_circuit: typing.List[int]
+) -> typing.Tuple[einl.Rearrange, einl.Rearrange]:
+    """
+    Get einops layers for transforming between state and matrix representation of a subcircuit.
+    """
+    qubits_in_subc = [f"a{i}" for i in in_circuit]
+    qubits_not_in_subc = [f"a{i}" for i in range(num_qubits) if i not in in_circuit]
+    all_qubits = [f"a{i}" for i in range(num_qubits)]
+    state_pattern = f"batch ({' '.join(all_qubits)})"
+    matrix_pattern = f"(batch {' '.join(qubits_not_in_subc)}) ({' '.join(qubits_in_subc)})"
+    to_matrix_pattern = f"{state_pattern} -> {matrix_pattern}"
+    to_state_pattern = f"{matrix_pattern} -> {state_pattern}"
+    args = {f"a{i}": 2 for i in range(num_qubits)}
+    to_matrix = einl.Rearrange(to_matrix_pattern, **args)
+    to_state = einl.Rearrange(to_state_pattern, **args)
+    return to_matrix, to_state
 
 
 def __analyze_barren_plateu(
