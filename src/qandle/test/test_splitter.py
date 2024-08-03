@@ -46,8 +46,8 @@ def test_splitter_1():
 
 
 def test_splitter_2():
-    su = qandle.SU(num_qubits=10, reps=2, rotations=["rx", "ry"])
-    orig_c_big = qandle.Circuit(num_qubits=10, layers=[su])
+    su = qandle.SU(reps=2, rotations=["rx", "ry"], qubits=list(range(10)))
+    orig_c_big = qandle.Circuit(layers=[su])
     orig_c = orig_c_big.decompose()
     split_c = orig_c.split(max_qubits=5)
     orig_gates = list(orig_c.circuit.layers)
@@ -59,8 +59,8 @@ def test_splitter_2():
 
 
 def test_splitter_small():
-    su = qandle.SU(num_qubits=3, reps=2, rotations=["rx", "ry"])
-    orig_c_big = qandle.Circuit(num_qubits=3, layers=su.decompose()).decompose()
+    su = qandle.SU(qubits=list(range(3)), reps=2, rotations=["rx", "ry"])
+    orig_c_big = qandle.Circuit(layers=su.decompose()).decompose()
     inp = torch.rand(2**orig_c_big.num_qubits, dtype=torch.cfloat)
     inp = inp / torch.linalg.norm(inp, dim=-1, keepdim=True)
     split_t2 = orig_c_big.split(max_qubits=2)

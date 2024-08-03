@@ -30,7 +30,7 @@ class QConv(torch.nn.Module):
         qubits_for_out = math.ceil(math.log2(out_channels))
         self.qubits = max(qubits_for_inp, qubits_for_out, 1)
         amp = qandle.AmplitudeEmbedding(qubits=list(range(self.qubits)), pad_with=0)
-        sel = qandle.StronglyEntanglingLayer(num_qubits=self.qubits, depth=self.qdepth)
+        sel = qandle.StronglyEntanglingLayer(qubits=list(range(self.qubits)), depth=self.qdepth)
         mes = qandle.MeasureJointProbability()
 
         self.qcircuit = qandle.Circuit(

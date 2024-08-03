@@ -6,7 +6,6 @@ from qandle import qasm
 from qandle import utils
 import warnings
 import typing
-import einops.layers.torch as einl
 
 __all__ = ["Circuit"]
 
@@ -77,8 +76,7 @@ class Circuit(torch.nn.Module):
             elif hasattr(layer, "num_qubits"):
                 qubits.update(range(layer.num_qubits))  # type: ignore
             elif hasattr(layer, "qubits"):
-                if qubits:
-                    qubits.update(layer.qubits)
+                qubits.update(layer.qubits)
             elif isinstance(
                 layer,
                 (

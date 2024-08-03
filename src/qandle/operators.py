@@ -2,7 +2,6 @@ import torch
 import abc
 import typing
 import qw_map
-import einops.layers.torch as einl
 
 import qandle.utils as utils
 import qandle.config as config

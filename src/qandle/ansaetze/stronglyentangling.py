@@ -15,9 +15,15 @@ __all__ = ["StronglyEntanglingLayer"]
 
 
 class StronglyEntanglingLayer(UnbuiltAnsatz):
+    """
+    A strongly entangling layer, inspired by `this paper <https://arxiv.org/abs/1804.00633>`_.
+    Consists of a series of single-qubit rotations on each qubit specified in the :code:`qubits` parameter, followed by a series of CNOT gates. A higher :code:`depth` will increase the expressivity of the circuit at the cost of more parameters and a linear increase in runtime.
+    """
+
     def __init__(
         self,
-        num_qubits: int,
+        qubits: typing.List[int],
+        num_qubits_total: typing.Union[int, None] = None,
         depth: int = 1,
         rotations=["rz", "ry", "rz"],
         q_params=None,
@@ -25,10 +31,11 @@ class StronglyEntanglingLayer(UnbuiltAnsatz):
     ):
         super().__init__()
         self.depth = depth
-        self.num_qubits = num_qubits
+        self.qubits = qubits
+        self.num_qubits = num_qubits_total
         self.rots = [utils.parse_rot(r) for r in rotations]
         if q_params is None:
-            q_params = torch.rand(depth, num_qubits, len(rotations))
+            q_params = torch.rand(depth, len(qubits), len(rotations))
         self.q_params = q_params
         if remapping is None:
             remapping = qw_map.none
@@ -36,11 +43,12 @@ class StronglyEntanglingLayer(UnbuiltAnsatz):
 
     def build(self, *args, **kwargs) -> BuiltAnsatz:
         return StronglyEntanglingLayerBuilt(
-            num_qubits=self.num_qubits,
+            num_qubits=kwargs["num_qubits"],
             depth=self.depth,
             rotations=self.rots,
             q_params=self.q_params,
             remapping=self.remapping,
+            qubits=self.qubits,
         )
 
     def __str__(self) -> str:
@@ -52,7 +60,7 @@ class StronglyEntanglingLayer(UnbuiltAnsatz):
     def decompose(self) -> typing.List[op.UnbuiltOperator]:
         layers = []
         for d in range(self.depth):
-            for w in range(self.num_qubits):
+            for w in self.qubits:
                 for r in range(len(self.rots)):
                     layers.append(
                         self.rots[r](
@@ -62,7 +70,9 @@ class StronglyEntanglingLayer(UnbuiltAnsatz):
                         )
                     )
             layers.extend(
-                StronglyEntanglingLayerBuilt._get_cnots(self.num_qubits, d % (self.num_qubits - 1))
+                StronglyEntanglingLayerBuilt._get_cnots(
+                    self.qubits, self.num_qubits, d % (self.num_qubits - 1)
+                )
             )
         return layers
 
@@ -71,6 +81,7 @@ class StronglyEntanglingLayerBuilt(BuiltAnsatz):
     def __init__(
         self,
         num_qubits: int,
+        qubits: typing.List[int],
         depth: int,
         rotations: typing.List[op.UnbuiltParametrizedOperator],
         q_params: torch.Tensor,
@@ -80,6 +91,7 @@ class StronglyEntanglingLayerBuilt(BuiltAnsatz):
         self.num_qubits = num_qubits
         self.depth = depth
         self.rots = rotations
+        self.qubits = qubits
         layers = []
         for d in range(depth):
             for w in range(self.num_qubits):
@@ -91,19 +103,21 @@ class StronglyEntanglingLayerBuilt(BuiltAnsatz):
                             remapping=remapping,  # type: ignore
                         ).build(num_qubits)
                     )
-            layers.extend(self._get_cnots(self.num_qubits, d % (self.num_qubits - 1)))
+            layers.extend(self._get_cnots(self.qubits, self.num_qubits, d % (self.num_qubits - 1)))
         self.mods = torch.nn.Sequential(*layers)
 
     def forward(self, state: torch.Tensor):
         return self.mods(state)
 
     @staticmethod
-    def _get_cnots(num_qubits: int, iteration: int) -> typing.List[op.UnbuiltOperator]:
-        assert iteration < num_qubits - 1
+    def _get_cnots(
+        qubits: typing.List[int], num_qubits_total: int, iteration: int
+    ) -> typing.List[op.UnbuiltOperator]:
+        assert iteration < num_qubits_total - 1
         cnots = []
-        for c in range(num_qubits):
-            t = (c + iteration + 1) % num_qubits
-            cnots.append(op.CNOT(c, t).build(num_qubits))
+        for ci in range(len(qubits)):
+            ti = (ci + iteration + 1) % len(qubits)
+            cnots.append(op.CNOT(qubits[ci], qubits[ti]).build(num_qubits_total))
         return cnots
 
     def __str__(self) -> str:

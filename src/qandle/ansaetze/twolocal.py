@@ -11,9 +11,13 @@ __all__ = ["TwoLocal"]
 
 
 class TwoLocal(ansatz.UnbuiltAnsatz):
+    """
+    The 2-local circuit as described in `the Qiskit docs <https://docs.quantum.ibm.com/api/qiskit/qiskit.circuit.library.TwoLocal>`_. It comprises alternating layers of single qubit rotations and CNOT gates. This implementation uses the :code:`linear` entanglement map.
+    """
+
     def __init__(
         self,
-        num_qubits: int,
+        qubits: typing.Union[typing.List[int], None] = None,
         depth: int = 1,
         remapping: typing.Union[typing.Callable, None] = config.DEFAULT_MAPPING,
         q_params=None,
@@ -22,11 +26,12 @@ class TwoLocal(ansatz.UnbuiltAnsatz):
         self.depth = depth
         self.remapping = remapping
         self.q_params = q_params
-        self.num_qubits = num_qubits
+        self.qubits = qubits
 
     def build(self, *args, **kwargs) -> "ansatz.BuiltAnsatz":
         return TwoLocalBuilt(
-            num_qubits=self.num_qubits,
+            num_qubits=kwargs["num_qubits"],
+            qubits=self.qubits,
             depth=self.depth,
             remapping=self.remapping,
             q_params=self.q_params,
@@ -39,13 +44,19 @@ class TwoLocal(ansatz.UnbuiltAnsatz):
         return [g.to_qasm() for g in self.decompose()]  # type: ignore
 
     def decompose(self) -> typing.List[op.Operator]:
+        if self.qubits is None:
+            raise ValueError(
+                "It is not specified on which qubits to apply the ansatz. Build the circuit to specify or pass them explicitly as a list"
+            )
         res = []
-        qp = self.q_params if self.q_params is not None else torch.rand(self.depth, self.num_qubits)
+        qp = (
+            self.q_params if self.q_params is not None else torch.rand(self.depth, len(self.qubits))
+        )
         for d in range(self.depth):
-            for w in range(self.num_qubits):
-                res.append(op.RY(qubit=w, theta=qp[d, w]))
-            for c in range(self.num_qubits - 1):
-                res.append(op.CNOT(c, c + 1))
+            for wi in range(len(self.qubits)):
+                res.append(op.RY(qubit=self.qubits[wi], theta=qp[d, wi]))
+            for wi in range(len(self.qubits) - 1):
+                res.append(op.CNOT(self.qubits[wi], self.qubits[wi + 1]))
         return res
 
 
@@ -53,6 +64,7 @@ class TwoLocalBuilt(ansatz.BuiltAnsatz):
     def __init__(
         self,
         num_qubits: int,
+        qubits: typing.Union[typing.List[int], None],
         depth: int = 1,
         remapping: typing.Union[typing.Callable, None] = config.DEFAULT_MAPPING,
         q_params=None,
@@ -61,9 +73,12 @@ class TwoLocalBuilt(ansatz.BuiltAnsatz):
         self.num_qubits = num_qubits
         self.depth = depth
         self.remapping = remapping
-        if q_params is None or q_params.shape != (depth, num_qubits):
+        self.qubits = qubits or list(range(num_qubits))
+        if q_params is None or q_params.shape != (depth, len(self.qubits)):
             q_params = torch.rand(depth, num_qubits)
-        self.register_buffer("cnot_matrices", self._get_cnot_matrix(num_qubits), persistent=False)
+        self.register_buffer(
+            "cnot_matrices", self._get_cnot_matrix(self.qubits, self.num_qubits), persistent=False
+        )
         layers = [
             [op.RY(qubit=w, theta=q_params[d, w]).build(num_qubits) for w in range(num_qubits)]
             for d in range(depth)
@@ -71,10 +86,10 @@ class TwoLocalBuilt(ansatz.BuiltAnsatz):
         self.mods = torch.nn.ModuleList([torch.nn.Sequential(*lay) for lay in layers])
 
     @staticmethod
-    def _get_cnot_matrix(num_qubits: int):
+    def _get_cnot_matrix(qubits: typing.List[int], num_qubits: int):
         cnots = [
-            op.BuiltCNOT._calculate_matrix(c=c, t=c + 1, num_qubits=num_qubits)
-            for c in range(num_qubits - 1)
+            op.BuiltCNOT._calculate_matrix(c=qubits[ci], t=qubits[ci + 1], num_qubits=num_qubits)
+            for ci in range(len(qubits) - 1)
         ]
         r = cnots[0]
         for c in cnots[1:]:
@@ -94,8 +109,8 @@ class TwoLocalBuilt(ansatz.BuiltAnsatz):
         outp = []
         for d in range(self.depth):
             outp.extend([g.to_qasm() for g in self.mods[d]])
-            for c in range(self.num_qubits - 1):
-                outp.append(op.CNOT(c, c + 1).to_qasm())
+            for ci in range(len(self.qubits) - 1):
+                outp.append(op.CNOT(self.qubits[ci], self.qubits[ci + 1]).to_qasm())
         return outp  # type: ignore
 
     def decompose(self) -> typing.List[op.UnbuiltOperator]:
@@ -103,6 +118,6 @@ class TwoLocalBuilt(ansatz.BuiltAnsatz):
         for mod in self.mods:
             for seq in mod:
                 outp.append(copy.deepcopy(seq))
-            for c in range(self.num_qubits - 1):
-                outp.append(op.CNOT(c, c + 1))
+            for ci in range(len(self.qubits) - 1):
+                outp.append(op.CNOT(self.qubits[ci], self.qubits[ci + 1]))
         return outp
