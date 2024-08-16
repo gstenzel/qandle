@@ -26,6 +26,21 @@ def test_sel():
     assert torch.allclose(pl_result, qandle_result, rtol=1e-6, atol=1e-6)
 
 
+def test_sel_sub():
+    num_qubits = 5
+    batch = 17
+
+    qandle_sel1 = qandle.StronglyEntanglingLayer(qubits=[0, 1, 2, 3], depth=7).build(num_qubits=5)
+    qandle_sel2 = qandle.StronglyEntanglingLayer(qubits=[1, 2, 3, 4], depth=7).build(num_qubits=5)
+    qandle_sel3 = qandle.StronglyEntanglingLayer(qubits=[0, 1, 3, 4], depth=7).build(num_qubits=5)
+
+    inp = torch.rand(batch, 2**num_qubits, dtype=torch.cfloat)
+    inp = inp / torch.linalg.norm(inp, dim=1, keepdim=True)
+    qandle_sel1(inp)
+    qandle_sel2(inp)
+    qandle_sel3(inp)
+
+
 def test_sel_batched():
     num_qubits = 5
     depth = 7
@@ -72,6 +87,11 @@ def test_twolocal():
     assert isinstance(two.__str__(), str)
     two.to_qasm()
 
+    inp2 = torch.rand(2**5, dtype=torch.cfloat)
+    inp2 = inp2 / inp2.norm()
+    two2 = utwo.build(num_qubits=5)
+    assert isinstance(two2(inp2), torch.Tensor)
+
 
 def test_su():
     for num_w in [2, 3, 6]:
@@ -84,3 +104,8 @@ def test_su():
                 assert isinstance(su.decompose(), list)
                 assert isinstance(su.__str__(), str)
                 assert len(su.decompose()) == len(rots) * num_w * (1 + reps) + reps * (num_w - 1)
+        for additional in [0, 1, 2]:
+            su1 = qandle.SU(qubits=list(range(additional, num_w + additional)))
+            inp = torch.rand(2 ** (num_w + additional * 2), dtype=torch.cfloat)
+            inp = inp / inp.norm()
+            su1.build(num_qubits=num_w + additional * 2)(inp)

@@ -60,12 +60,12 @@ class StronglyEntanglingLayer(UnbuiltAnsatz):
     def decompose(self) -> typing.List[op.UnbuiltOperator]:
         layers = []
         for d in range(self.depth):
-            for w in self.qubits:
+            for wi, w in enumerate(self.qubits):
                 for r in range(len(self.rots)):
                     layers.append(
                         self.rots[r](
                             qubit=w,
-                            theta=self.q_params[d, w, r],
+                            theta=self.q_params[d, wi, r],
                             remapping=self.remapping,
                         )
                     )
@@ -94,16 +94,16 @@ class StronglyEntanglingLayerBuilt(BuiltAnsatz):
         self.qubits = qubits
         layers = []
         for d in range(depth):
-            for w in range(self.num_qubits):
+            for wi, w in enumerate(self.qubits):
                 for r in range(len(self.rots)):
                     layers.append(
                         self.rots[r](
                             qubit=w,
-                            theta=q_params[d, w, r],
+                            theta=q_params[d, wi, r],
                             remapping=remapping,  # type: ignore
                         ).build(num_qubits)
                     )
-            layers.extend(self._get_cnots(self.qubits, self.num_qubits, d % (self.num_qubits - 1)))
+            layers.extend(self._get_cnots(self.qubits, self.num_qubits, d % (len(self.qubits) - 1)))
         self.mods = torch.nn.Sequential(*layers)
 
     def forward(self, state: torch.Tensor):
@@ -113,7 +113,7 @@ class StronglyEntanglingLayerBuilt(BuiltAnsatz):
     def _get_cnots(
         qubits: typing.List[int], num_qubits_total: int, iteration: int
     ) -> typing.List[op.UnbuiltOperator]:
-        assert iteration < num_qubits_total - 1
+        assert iteration + 1 < num_qubits_total
         cnots = []
         for ci in range(len(qubits)):
             ti = (ci + iteration + 1) % len(qubits)
