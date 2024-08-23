@@ -31,6 +31,27 @@ def get_circuit_cnot10():
     )
 
 
+def test_nested_circuits():
+    c1 = qandle.Circuit(
+        layers=[
+            qandle.RX(0),
+            qandle.CNOT(0, 1),
+        ],
+        num_qubits=3,
+    )
+    c2 = qandle.Circuit(
+        layers=[qandle.RY(1), qandle.StronglyEntanglingLayer(qubits=[1, 2])],
+        num_qubits=3,
+    )
+    c1c2 = qandle.Circuit(layers=[c1, qandle.RZ(0), c2], num_qubits=3)
+    split = c1c2.split(max_qubits=3)
+    inp = torch.rand(2**3, dtype=torch.cfloat)
+    inp = inp / torch.linalg.norm(inp, dim=-1, keepdim=True)
+    res_c1c2 = c1c2(inp)
+    res_split = split(inp)
+    assert torch.allclose(res_c1c2, res_split, rtol=1e-6, atol=1e-6)
+
+
 def test_splitter_1():
     orig_c = get_circuit_cnot10()
     split_c = orig_c.split(max_qubits=5)

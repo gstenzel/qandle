@@ -34,6 +34,8 @@ class Circuit(torch.nn.Module):
         circuit=None,
     ):
         super().__init__()
+        self.name = ""
+        self.named = True
         if num_qubits is not None:
             self.num_qubits = num_qubits
         else:
@@ -172,13 +174,16 @@ class UnsplittedCircuit(torch.nn.Module):
         """
         Decompose the circuit into a circuit without any subcircuits, returning a new, flat Circuit.
         """
-        ls = []
-        for layers in self.layers:
-            if hasattr(layers, "decompose"):
-                ls.extend(layers.decompose())  # type: ignore
+        new_layers = []
+        for layer in self.layers:
+            if hasattr(layer, "decompose"):
+                if isinstance(layer, (Circuit)):
+                    new_layers.extend(layer.decompose().circuit.layers)
+                else:
+                    new_layers.extend(layer.decompose())
             else:
-                ls.append(layers)
-        return UnsplittedCircuit(self.num_qubits, ls)
+                new_layers.append(layer)
+        return UnsplittedCircuit(self.num_qubits, new_layers)
 
     def split(self, **kwargs) -> typing.Union["SplittedCircuit", "UnsplittedCircuit"]:
         """
