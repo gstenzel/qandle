@@ -6,8 +6,10 @@ import pennylane as qml
 def test_amplitude_embedding_unpadded():
     w = 4
     inp = torch.arange(2**w).to(torch.float)
-    emb = embeddings.AmplitudeEmbedding(qubits=range(w), normalize=True, pad_with=None)
-    out = emb(inp)
+    emb = embeddings.AmplitudeEmbedding(
+        qubits=range(w), normalize=True, pad_with=None, name="amp"
+    ).build(num_qubits=w)
+    out = emb(amp=inp)
     assert torch.allclose(out.real, inp / inp.norm())
     assert torch.allclose(out.imag, torch.zeros_like(inp))
 
@@ -24,8 +26,10 @@ def test_amplitude_embedding_unpadded_batched():
     w = 4
     inp = torch.rand(10, 2**w).to(torch.float)
     inp = inp / inp.norm(dim=1, keepdim=True)
-    emb = embeddings.AmplitudeEmbedding(qubits=range(w), normalize=False, pad_with=None)
-    out = emb(inp)
+    emb = embeddings.AmplitudeEmbedding(
+        qubits=range(w), normalize=False, pad_with=None, name="amp"
+    ).build(num_qubits=w)
+    out = emb(amp=inp)
     assert torch.allclose(out.real, inp)
     assert torch.allclose(out.imag, torch.zeros_like(inp))
 
@@ -41,8 +45,10 @@ def test_amplitude_embedding_unpadded_batched():
 def test_amplitude_embedding_padded():
     inp = torch.rand(11).to(torch.float)
     n_inp = inp / inp.norm()
-    emb = embeddings.AmplitudeEmbedding(qubits=range(4), normalize=True, pad_with=0)
-    out = emb(inp)
+    emb = embeddings.AmplitudeEmbedding(
+        qubits=range(4), normalize=True, pad_with=0, name="amp"
+    ).build(num_qubits=4)
+    out = emb(amp=inp)
     assert torch.allclose(out.real[:11], n_inp)
     assert torch.allclose(out.imag, torch.zeros(16))
 
@@ -57,8 +63,10 @@ def test_angle_embedding_x3():
         return qml.state()
 
     pl_out = pl_circuit().to(torch.cfloat)
-    emb = embeddings.AngleEmbedding(num_qubits=w, rotation="rx")
-    out = emb(inp)
+    emb = embeddings.AngleEmbedding(qubits=list(range(w)), rotation="rx", name="amp").build(
+        num_qubits=w
+    )
+    out = emb(amp=inp)
     assert torch.allclose(out, pl_out)
 
 
@@ -72,8 +80,10 @@ def test_angle_embedding_x3_batched():
         return qml.state()
 
     pl_out = pl_circuit().to(torch.cfloat)
-    emb = embeddings.AngleEmbedding(num_qubits=w, rotation="rx")
-    out = emb(inp)
+    emb = embeddings.AngleEmbedding(qubits=list(range(w)), rotation="rx", name="amp").build(
+        num_qubits=w
+    )
+    out = emb(amp=inp)
     assert torch.allclose(out, pl_out)
 
 
@@ -87,8 +97,8 @@ def test_angle_embedding_y4():
         return qml.state()
 
     pl_out = pl_circuit().to(torch.cfloat)
-    emb = embeddings.AngleEmbedding(num_qubits=w, rotation="y")
-    out = emb(inp)
+    emb = embeddings.AngleEmbedding(qubits=list(range(w)), rotation="y", name="emb").build(w)
+    out = emb(emb=inp)
     assert torch.allclose(out, pl_out)
 
 
@@ -102,8 +112,10 @@ def test_angle_embedding_y4_batched():
         return qml.state()
 
     pl_out = pl_circuit().to(torch.cfloat)
-    emb = embeddings.AngleEmbedding(num_qubits=w, rotation="y")
-    out = emb(inp)
+    emb = embeddings.AngleEmbedding(qubits=list(range(w)), rotation="y", name="amp").build(
+        num_qubits=w
+    )
+    out = emb(amp=inp)
     assert torch.allclose(out, pl_out)
 
 
@@ -117,8 +129,10 @@ def test_angle_embedding_z5():
         return qml.state()
 
     pl_out = pl_circuit().to(torch.cfloat)
-    emb = embeddings.AngleEmbedding(num_qubits=w, rotation="z")
-    out = emb(inp)
+    emb = embeddings.AngleEmbedding(qubits=list(range(w)), rotation="z", name="amp").build(
+        num_qubits=w
+    )
+    out = emb(amp=inp)
     assert torch.allclose(out, pl_out)
 
 
@@ -132,6 +146,8 @@ def test_angle_embedding_z5_batched():
         return qml.state()
 
     pl_out = pl_circuit().to(torch.cfloat)
-    emb = embeddings.AngleEmbedding(num_qubits=w, rotation="z")
-    out = emb(inp)
+    emb = embeddings.AngleEmbedding(qubits=list(range(w)), rotation="z", name="amp").build(
+        num_qubits=w
+    )
+    out = emb(amp=inp)
     assert torch.allclose(out, pl_out)

@@ -37,7 +37,7 @@ def _construct_graph(circuit) -> nx.DiGraph:
     )
     assert len(nodes) > 0, _txt
     used_qubits = set(n.c for n in nodes) | set(n.t for n in nodes)
-    _txt = "Circuit has qubits not used in CNOTs. Instead of splitting, just use separate circuits for separate qubits."
+    _txt = f"Circuit has qubits not used in CNOTs. Instead of splitting, just use separate circuits for separate qubits. Only used qubits are: {used_qubits}"
     assert len(used_qubits) == circuit.num_qubits, _txt
     G = nx.DiGraph()
     for n in nodes:
