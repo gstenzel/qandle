@@ -10,6 +10,7 @@ Submodules
    qandle.ansaetze.ansatz
    qandle.ansaetze.specialunitary
    qandle.ansaetze.stronglyentangling
+   qandle.ansaetze.stronglyentangling_budget
    qandle.ansaetze.twolocal
 
 Module contents
