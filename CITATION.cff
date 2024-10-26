@@ -1,0 +1,61 @@
+# This CITATION.cff file was generated with cffinit.
+# Visit https://bit.ly/cffinit to generate yours today!
+
+cff-version: 1.2.0
+title: QANDLE
+message: >-
+  Accelerating State Vector Simulation Using Gate-Matrix
+  Caching and Circuit Splitting
+type: software
+authors:
+  - given-names: Gerhard
+    family-names: Stenzel
+    affiliation: LMU Munich
+    orcid: 'https://orcid.org/0009-0009-0280-4911'
+  - given-names: Sebastian
+    family-names: Zielinski
+    affiliation: LMU Munich
+  - given-names: Michael
+    family-names: Kölle
+    affiliation: LMU Munich
+  - given-names: Philipp
+    family-names: Altmann
+    affiliation: LMU Munich
+  - given-names: Jonas
+    family-names: Nüßlein
+    affiliation: LMU Munich
+  - given-names: Thomas
+    family-names: Gabor
+    affiliation: LMU Munich
+identifiers:
+  - type: other
+    value: 'https://arxiv.org/abs/2404.09213'
+    description: Arxiv
+repository-code: 'https://github.com/gstenzel/qandle'
+url: 'https://gstenzel.github.io/qandle/'
+abstract: >-
+  To address the computational complexity associated with
+  state-vector simulation for quantum circuits, we propose a
+  combination of advanced techniques to accelerate circuit
+  execution. Quantum gate matrix caching reduces the
+  overhead of repeated applications of the Kronecker product
+  when applying a gate matrix to the state vector by storing
+  decomposed partial matrices for each gate. Circuit
+  splitting divides the circuit into sub-circuits with fewer
+  gates by constructing a dependency graph, enabling
+  parallel or sequential execution on disjoint subsets of
+  the state vector. These techniques are implemented using
+  the PyTorch machine learning framework. We demonstrate the
+  performance of our approach by comparing it to other
+  PyTorch-compatible quantum state-vector simulators. Our
+  implementation, named Qandle, is designed to seamlessly
+  integrate with existing machine learning workflows,
+  providing a user-friendly API and compatibility with the
+  OpenQASM format. Qandle is an open-source project hosted
+  on GitHub and PyPI.
+keywords:
+  - quantum
+  - quantum-computing
+  - quantum-machine-learning
+  - pytorch
+license: MIT
