@@ -14,6 +14,7 @@ __all__ = [
     "RY",
     "RZ",
     "CNOT",
+    "CZ",
     "Reset",
     "SWAP",
     "U",
@@ -399,6 +400,24 @@ class CNOT(UnbuiltOperator):
         return BuiltCNOT(control=self.c, target=self.t, num_qubits=num_qubits)
 
 
+class CZ(UnbuiltOperator):
+    """CZ gate."""
+
+    def __init__(self, control: int, target: int):
+        assert control != target, "Control and target must be different"
+        self.c = control
+        self.t = target
+
+    def __str__(self) -> str:
+        return f"CZ {self.c}|{self.t}"
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return qasm.QasmRepresentation(gate_str=f"cz q[{self.c}], q[{self.t}]")
+
+    def build(self, num_qubits, **kwargs) -> "BuiltCZ":
+        return BuiltCZ(control=self.c, target=self.t, num_qubits=num_qubits)
+
+
 class BuiltCNOT(BuiltOperator):
     def __init__(self, control: int, target: int, num_qubits: int):
         super().__init__()
@@ -428,6 +447,36 @@ class BuiltCNOT(BuiltOperator):
 
     def to_qasm(self) -> qasm.QasmRepresentation:
         return CNOT(self.c, self.t).to_qasm()
+
+
+class BuiltCZ(BuiltOperator):
+    def __init__(self, control: int, target: int, num_qubits: int):
+        super().__init__()
+        self.c = control
+        self.t = target
+        self.num_qubits = num_qubits
+        self.register_buffer(
+            "_M", self._calculate_matrix(control, target, num_qubits), persistent=False
+        )
+
+    @staticmethod
+    def _calculate_matrix(c: int, t: int, num_qubits: int):
+        c2, t2 = num_qubits - c - 1, num_qubits - t - 1
+        indices = torch.arange(2**num_qubits)
+        diag = torch.ones(2**num_qubits, dtype=torch.cfloat)
+        mask = ((indices & (1 << c2)) != 0) & ((indices & (1 << t2)) != 0)
+        diag[mask] = -1
+        M = torch.diag(diag)
+        return M
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        return state @ self._M
+
+    def __str__(self) -> str:
+        return CZ(self.c, self.t).__str__()
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return CZ(self.c, self.t).to_qasm()
 
 
 class BuiltReset(BuiltOperator):
