@@ -116,6 +116,14 @@ def test_unbatched():
                     assert isinstance(own_cnot.__str__(), str)
                     assert isinstance(own_cnot_u.__str__(), str)
 
+                    gt = forward_ground_truth(num_w, lambda: qml.CZ(wires=[w, w2]), inp)
+                    own_cz_u = qandle.operators.CZ(control=w, target=w2)
+                    own_cz = own_cz_u.build(num_qubits=num_w)
+                    own = own_cz(inp)
+                    assert torch.allclose(gt, own)
+                    assert isinstance(own_cz.__str__(), str)
+                    assert isinstance(own_cz_u.__str__(), str)
+
     info = f"errors max: {max(errors)}, avg: {sum(errors)/len(errors)}"
     assert max(errors) < 1e-5, f"Errors too high, {info}"
 
@@ -183,6 +191,12 @@ def test_batched():
                     assert isinstance(own_swap.__str__(), str)
                     own_swap.to_qasm()
                     own = own_swap(inp)
+                    assert torch.allclose(gt, own)
+                    errors.append((gt - own).abs().sum())
+                if w2 != w:
+                    gt = forward_ground_truth(num_w, lambda: qml.CZ(wires=[w, w2]), inp)
+                    own_cz = qandle.operators.CZ(control=w, target=w2).build(num_qubits=num_w)
+                    own = own_cz(inp)
                     assert torch.allclose(gt, own)
                     errors.append((gt - own).abs().sum())
     info = f"errors max: {max(errors)}, avg: {sum(errors)/len(errors)}"

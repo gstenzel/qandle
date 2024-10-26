@@ -64,6 +64,32 @@ def test_sel_batched():
     assert torch.allclose(pl_result, qandle_result, rtol=1e-6, atol=1e-6)
 
 
+def test_sel_budget():
+    num_qubits = 5
+    depth = 4
+    rots = ["rz", "ry", "rz"]
+    sel = qandle.StronglyEntanglingLayer(
+        qubits=list(range(num_qubits)), depth=depth, rotations=rots, num_qubits_total=num_qubits
+    ).build(num_qubits=num_qubits)
+    sel_budget = qandle.StronglyEntanglingLayerBudget(
+        num_qubits_total=num_qubits,
+        rotations=rots,
+        param_budget=num_qubits * depth * len(rots),
+        qubits=list(range(num_qubits)),
+        control_gate_spacing=3,
+    )
+    sel_dec = sel.decompose()
+    sel_budget_dec = sel_budget.layers
+    assert len(sel_dec) == len(sel_budget_dec)
+    ssel_dec = sorted(sel_dec, key=lambda x: str(x))
+    ssel_budget_dec = sorted(sel_budget_dec, key=lambda x: str(x))
+    for s, sb in zip(ssel_dec, ssel_budget_dec):
+        assert type(s) is type(sb)
+    inp = torch.rand(7, 2**num_qubits, dtype=torch.cfloat)
+    inp = inp / torch.linalg.norm(inp, dim=1, keepdim=True)
+    sel(inp)
+
+
 def test_sel_general():
     num_qubits = 5
     qandle_sel_ub = qandle.StronglyEntanglingLayer(qubits=list(range(num_qubits)), depth=10)
