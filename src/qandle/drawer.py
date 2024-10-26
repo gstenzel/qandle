@@ -34,7 +34,7 @@ def draw(circuit) -> str:
                 if not config.DRAW_SHIFT_LEFT:
                     qubits[w] += config.DRAW_DASH * (len(str_(gate)) + 1)
         except AttributeError:
-            if isinstance(gate, (op.CNOT, op.BuiltCNOT)):
+            if isinstance(gate, (op.CNOT, op.BuiltCNOT, op.CZ, op.BuiltCZ)):
                 _all_w.remove(gate.c)
                 _all_w.remove(gate.t)
 
@@ -47,8 +47,13 @@ def draw(circuit) -> str:
                     qubits[gate.c] += config.DRAW_DASH * (longest - len(qubits[gate.c]))
                     qubits[gate.t] += config.DRAW_DASH * (longest - len(qubits[gate.t]))
 
-                qubits[gate.c] += config.DRAW_DASH + "■"
-                qubits[gate.t] += config.DRAW_DASH + "X"
+                qubits[gate.c] += config.DRAW_DASH + "⬤"
+                if isinstance(gate, (op.CNOT, op.BuiltCNOT)):
+                    qubits[gate.t] += config.DRAW_DASH + "⊕"
+                elif isinstance(gate, (op.CZ, op.BuiltCZ)):
+                    qubits[gate.t] += config.DRAW_DASH + "⬤"
+                else:
+                    raise ValueError("Unknown gate type")
                 for w in range(min(gate.c, gate.t) + 1, max(gate.c, gate.t)):
                     if config.DRAW_SHIFT_LEFT:
                         qubits[w] += config.DRAW_DASH * (longest - len(qubits[w]))
