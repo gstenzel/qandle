@@ -18,6 +18,9 @@ class InputOperatorBuilt(op.BuiltOperator, abc.ABC):
     def decompose(self):
         raise NotImplementedError(f"Decomposing {self.__class__} is not yet supported")
 
+    def to_matrix(self):
+        raise ValueError("Input operators do not have a matrix representation")
+
 
 def _identity(input, *args, **kwargs):
     return input

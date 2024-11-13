@@ -52,6 +52,12 @@ class BuiltMeasurement(op.BuiltOperator):
 
         return [SingleQubitMeasurementDummy(w) for w in range(self.num_qubits)]
 
+    def to_matrix(self):
+        """
+        No-op for measurements.
+        """
+        return torch.eye(2**self.num_qubits)
+
 
 class UnbuiltMeasurement(op.UnbuiltOperator):
     def __str__(self) -> str:

@@ -1,6 +1,7 @@
 import qandle.operators as op
 import abc
 import typing
+import qandle.utils as utils
 
 __all__ = []
 
@@ -21,3 +22,7 @@ class UnbuiltAnsatz(Ansatz, op.UnbuiltOperator, abc.ABC):
 
 class BuiltAnsatz(Ansatz, op.BuiltOperator, abc.ABC):
     """A built ansatz, ready to be used."""
+
+    def to_matrix(self, **kwargs):
+        sub_matices = [gate.to_matrix(**kwargs) for gate in self.decompose()]
+        return utils.reduce_dot(*sub_matices)

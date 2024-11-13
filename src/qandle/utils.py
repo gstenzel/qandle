@@ -1,5 +1,17 @@
 import typing
 import einops.layers.torch as einl
+import torch
+
+
+def reduce_dot(*args):
+    """
+    Compute the dot product of a series of matrices.
+    """
+    # matrix = args[0]
+    # for sub_matrix in args[1:]:
+    #     matrix = torch.matmul(sub_matrix, matrix)
+    # return matrix
+    return torch.linalg.multi_dot(args).T
 
 
 def parse_rot(rot: str):

@@ -61,6 +61,10 @@ class BuiltOperator(Operator, torch.nn.Module, abc.ABC):
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """Applies the operator to the state."""
 
+    @abc.abstractmethod
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        """Returns the matrix representation of the operator, such that :code:`state @ matrix` is equivalent to :code:`forward(state)`. Might be significantly slower than forward."""
+
 
 class U(UnbuiltOperator):
     def __init__(self, qubit: int, matrix: torch.Tensor):
@@ -117,6 +121,9 @@ class BuiltU(BuiltOperator):
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         return state @ self.matrix
+
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return self.matrix
 
 
 CustomGate = BuiltU
@@ -291,6 +298,9 @@ class BuiltParametrizedOperator(BuiltOperator, abc.ABC):
     def matrix_builder(self) -> matrixbuilder:
         """Returns the matrix builder for the gate."""
 
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return self.get_matrix(**kwargs)
+
 
 class RX(UnbuiltParametrizedOperator):
     """
@@ -448,6 +458,9 @@ class BuiltCNOT(BuiltOperator):
     def to_qasm(self) -> qasm.QasmRepresentation:
         return CNOT(self.c, self.t).to_qasm()
 
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return self._M
+
 
 class BuiltCZ(BuiltOperator):
     def __init__(self, control: int, target: int, num_qubits: int):
@@ -478,22 +491,27 @@ class BuiltCZ(BuiltOperator):
     def to_qasm(self) -> qasm.QasmRepresentation:
         return CZ(self.c, self.t).to_qasm()
 
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return self._M
+
 
 class BuiltReset(BuiltOperator):
     def __init__(self, qubit: int, num_qubits: int):
         super().__init__()
         self.qubit = qubit
         self.num_qubits = num_qubits
-        self.to_matrix, self.to_state = utils.get_matrix_transforms(num_qubits, [qubit])
+        self.to_matrix_transform, self.to_state_transform = utils.get_matrix_transforms(
+            num_qubits, [qubit]
+        )
 
     def forward(self, state: torch.Tensor):
         unbatched = state.dim() == 1
         if unbatched:
             state = state.unsqueeze(0)
-        state = self.to_matrix(state)
+        state = self.to_matrix_transform(state)
         new_state = torch.zeros_like(state)
         new_state[..., 0] = torch.linalg.norm(state, dim=-1)
-        state = self.to_state(new_state)
+        state = self.to_state_transform(new_state)
         if unbatched:
             state = state.squeeze(0)
         return state
@@ -503,6 +521,9 @@ class BuiltReset(BuiltOperator):
 
     def to_qasm(self) -> qasm.QasmRepresentation:
         return Reset(self.qubit).to_qasm()
+
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        raise ValueError("Reset gate does not have a matrix representation.")
 
 
 class Reset(UnbuiltOperator):
@@ -547,6 +568,9 @@ class BuiltSWAP(BuiltOperator):
 
     def to_qasm(self) -> qasm.QasmRepresentation:
         return qasm.QasmRepresentation(gate_str=f"swap q[{self.a}], q[{self.b}]")
+
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return self._M
 
 
 class SWAP(UnbuiltOperator):

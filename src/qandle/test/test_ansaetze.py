@@ -26,6 +26,25 @@ def test_sel():
     assert torch.allclose(pl_result, qandle_result, rtol=1e-6, atol=1e-6)
 
 
+def test_sel_to_matrix():
+    num_qubits = 5
+    depth = 11
+    pl_dev = qml.device("default.qubit.torch", wires=num_qubits)
+    weights = torch.rand(depth, num_qubits, 3)
+
+    @qml.qnode(device=pl_dev, interface="torch")
+    def pl_circuit():
+        qml.StronglyEntanglingLayers(weights=weights, wires=range(num_qubits))
+        return qml.state()
+
+    pl_matrix = qml.matrix(qml.StronglyEntanglingLayers(weights=weights, wires=range(num_qubits)))
+    qandle_sel = qandle.StronglyEntanglingLayer(
+        qubits=list(range(num_qubits)), depth=depth, q_params=weights, remapping=None
+    ).build(num_qubits=num_qubits)
+    qandle_matrix = qandle_sel.to_matrix()
+    assert torch.allclose(pl_matrix, qandle_matrix, rtol=1e-6, atol=1e-6)
+
+
 def test_sel_sub():
     num_qubits = 5
     batch = 17
