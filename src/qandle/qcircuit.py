@@ -57,6 +57,9 @@ class Circuit(torch.nn.Module):
     def forward(self, state=None, **kwargs):
         return self.circuit.forward(state, **kwargs)
 
+    def to_matrix(self, **kwargs):
+        return self.circuit.to_matrix(**kwargs)
+
     def __matmul__(self, x):
         """Allows the circuit to be multiplied with a state tensor, directly calling forward. Not compatible with named inputs."""
         return self.circuit.forward(x)
@@ -195,6 +198,12 @@ class UnsplittedCircuit(torch.nn.Module):
         splitted = splitter.split(self, **kwargs)
         return SplittedCircuit(self.num_qubits, splitted)
 
+    def to_matrix(self, **kwargs):
+        """
+        Get the matrix representation of the circuit.
+        """
+        return utils.reduce_dot(*[mod.to_matrix(**kwargs) for mod in self.layers])
+
 
 class SplittedCircuit(UnsplittedCircuit):
     """
@@ -237,6 +246,9 @@ class SplittedCircuit(UnsplittedCircuit):
     def to_qasm(self) -> qasm.QasmRepresentation:
         reps = [sc.to_qasm() for sc in self.subcircuits]
         return reps  # type: ignore
+
+    def to_matrix(self, **kwargs):
+        raise NotImplementedError("Can't get matrix representation of a splitted circuit.")
 
 
 class Subcircuit(torch.nn.Module):

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "qandle"
-version = "0.1.1"
+version = "0.1.2"
 description = "QANDLE is a fast and simple quantum state-vector simulator for hybrid machine learning using the PyTorch library."
 authors = ["Gerhard Stenzel <gerhard.stenzel@ifi.lmu.de>"]
 license = "MIT"
