@@ -76,6 +76,9 @@ class Circuit(torch.nn.Module):
             elif isinstance(layer, operators.SWAP):
                 qubits.add(layer.a)
                 qubits.add(layer.b)
+            elif isinstance(layer, operators.Controlled):
+                qubits.add(layer.c)
+                qubits.add(layer.t.qubits)
             elif hasattr(layer, "qubit"):
                 qubits.add(layer.qubit)  # type: ignore
             elif hasattr(layer, "num_qubits"):
@@ -91,7 +94,7 @@ class Circuit(torch.nn.Module):
             ):
                 pass  # ignore measurements, as they act on all qubits anyway
             else:
-                raise ValueError(f"Unknown layer type {type(layer)}")
+                raise ValueError(f"Unknown layer type {type(layer)}, number of qubits could not be inferred. Pass :code:`num_qubits` to the circuit.")
         if len(qubits) == 0:
             raise ValueError(
                 "Number of qubits could not be inferred from layers. Please provide num_qubits to the circuit directly."

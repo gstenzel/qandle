@@ -2,6 +2,7 @@ import torch
 import abc
 import typing
 import qw_map
+import warnings
 
 import qandle.utils as utils
 import qandle.config as config
@@ -19,6 +20,8 @@ __all__ = [
     "SWAP",
     "U",
     "CustomGate",
+    "Controlled",
+    "Invert",
     "BUILT_CLASS_RELATION",
 ]
 
@@ -410,6 +413,107 @@ class CNOT(UnbuiltOperator):
         return BuiltCNOT(control=self.c, target=self.t, num_qubits=num_qubits)
 
 
+class Invert(UnbuiltOperator):
+    """
+    Special class for inverted gates. Apply the inverse of the target operator.
+    """
+
+    def __init__(self, target: Operator):
+        self.t = target
+
+    def __str__(self) -> str:
+        return f"{self.t}^-1"
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return qasm.QasmRepresentation(gate_str=f"{self.t}^-1")
+
+    def build(self, num_qubits, **kwargs) -> "BuiltInvert":
+        return BuiltInvert(target=self.t, num_qubits=num_qubits)
+
+
+class BuiltInvert(BuiltOperator):
+    def __init__(self, target: Operator, num_qubits: int):
+        super().__init__()
+        if hasattr(target, "build"):
+            warnings.warn(
+                "Building target operator in Invert. If the target operator is parameterized, this might lead to different parameter initialization. Please build the target operator before inverting it."
+            )
+            target = target.build(num_qubits)
+        self.target = target
+        self.num_qubits = num_qubits
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        target_matrix = self.target.to_matrix()
+        return state @ torch.linalg.inv(target_matrix)
+
+    def __str__(self) -> str:
+        return Invert(self.target).__str__()
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return Invert(self.target).to_qasm()
+
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return torch.linalg.inv(self.target.to_matrix())
+
+
+class Controlled(UnbuiltOperator):
+    """
+    Special class for controlled gates. Use a control qubit, and apply the target operator if the control qubit is 1.
+    """
+
+    def __init__(self, control: int, target: Operator):
+        self.c = control
+        self.t = target
+
+    def __str__(self) -> str:
+        return f"Controlled {self.c}|{self.t}"
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return qasm.QasmRepresentation(gate_str=f"controlled q[{self.c}], {self.t}")
+
+    def build(self, num_qubits, **kwargs) -> "BuiltControlled":
+        return BuiltControlled(control=self.c, target=self.t, num_qubits=num_qubits)
+
+
+class BuiltControlled(BuiltOperator):
+    def __init__(self, control: int, target: Operator, num_qubits: int):
+        super().__init__()
+        self.c = control
+        if hasattr(target, "build"):
+            target = target.build(num_qubits)
+        self.t = target
+        self.num_qubits = num_qubits
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        target_matrix = self.t.to_matrix()
+        c2 = self.num_qubits - self.c - 1
+        mask = 1 << c2
+        dim = 2**self.num_qubits
+        device = state.device
+        indices = torch.arange(dim, device=device)
+        c1_mask = (indices & mask) != 0
+        batched = state.dim() == 1
+        if batched:
+            state = state.unsqueeze(0)
+        state_c1 = state.clone()
+        state_c1[:, ~c1_mask] = 0
+        # Apply the target operation on the control=1 subspace
+        transformed_c1 = state_c1 @ target_matrix
+        out = torch.where(c1_mask, transformed_c1, state)
+        if batched:
+            out = out.squeeze(0)
+        return out
+
+    def __str__(self) -> str:
+        return Controlled(self.c, self.t).__str__()
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return Controlled(self.c, self.t).to_qasm()
+
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return self.t.to_matrix()
+
+
 class CZ(UnbuiltOperator):
     """CZ gate."""
 
@@ -509,8 +613,9 @@ class BuiltReset(BuiltOperator):
         if unbatched:
             state = state.unsqueeze(0)
         state = self.to_matrix_transform(state)
-        new_state = torch.zeros_like(state)
-        new_state[..., 0] = torch.linalg.norm(state, dim=-1)
+        scale = torch.linalg.norm(state, dim=1) / torch.linalg.norm(state[..., :1], dim=1)
+        new_state = torch.zeros_like(state, dtype=torch.cfloat)
+        new_state[..., 0] = state[..., 0] * scale
         state = self.to_state_transform(new_state)
         if unbatched:
             state = state.squeeze(0)
@@ -527,6 +632,10 @@ class BuiltReset(BuiltOperator):
 
 
 class Reset(UnbuiltOperator):
+    """
+    Reset gate. Resets the selected qubit to the |0> state, while preserving the norm of the state.
+    """
+
     def __init__(self, qubit: int):
         self.qubit = qubit
 
@@ -606,5 +715,9 @@ BUILT_CLASS_RELATION = rdict(
         CNOT: BuiltCNOT,
         Reset: BuiltReset,
         U: BuiltU,
+        SWAP: BuiltSWAP,
+        CZ: BuiltCZ,
+        Invert: BuiltInvert,
+        Controlled: BuiltControlled,
     }
 )
