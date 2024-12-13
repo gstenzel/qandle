@@ -9,7 +9,18 @@ def reduce_dot(*args):
     """
     if len(args) == 1:
         return args[0]
-    return torch.linalg.multi_dot(args).T
+    matrix = args[0]
+    if matrix.dim() == 2:
+        matrix = matrix.unsqueeze(0)
+    for sub_matrix in args[1:]:
+        if sub_matrix.dim() == 2:
+            sm = sub_matrix.unsqueeze(0)
+        elif sub_matrix.dim() == 3:
+            sm = sub_matrix
+        else:
+            raise ValueError(f"Invalid shape {sub_matrix.shape}")
+        matrix = torch.matmul(sm, matrix)
+    return matrix
 
 
 def parse_rot(rot: str):

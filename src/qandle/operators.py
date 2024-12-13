@@ -482,10 +482,11 @@ class BuiltControlled(BuiltOperator):
         if hasattr(target, "build"):
             target = target.build(num_qubits)
         self.t = target
+        self.named = target.named
         self.num_qubits = num_qubits
 
-    def forward(self, state: torch.Tensor) -> torch.Tensor:
-        target_matrix = self.t.to_matrix()
+    def forward(self, state: torch.Tensor, **kwargs) -> torch.Tensor:
+        target_matrix = self.t.to_matrix(**kwargs)
         c2 = self.num_qubits - self.c - 1
         mask = 1 << c2
         dim = 2**self.num_qubits
@@ -498,7 +499,7 @@ class BuiltControlled(BuiltOperator):
         state_c1 = state.clone()
         state_c1[:, ~c1_mask] = 0
         # Apply the target operation on the control=1 subspace
-        transformed_c1 = state_c1 @ target_matrix
+        transformed_c1 = torch.squeeze(state_c1.unsqueeze(1) @ target_matrix, 1)
         out = torch.where(c1_mask, transformed_c1, state)
         if batched:
             out = out.squeeze(0)
@@ -613,9 +614,9 @@ class BuiltReset(BuiltOperator):
         if unbatched:
             state = state.unsqueeze(0)
         state = self.to_matrix_transform(state)
-        scale = torch.linalg.norm(state, dim=1) / torch.linalg.norm(state[..., :1], dim=1)
+        scale = torch.linalg.norm(state, dim=1) / (torch.linalg.norm(state[..., :1], dim=1) + 1e-7)
         new_state = torch.zeros_like(state, dtype=torch.cfloat)
-        new_state[..., 0] = state[..., 0] * scale
+        new_state[:, 0] = state[:, 0] * scale
         state = self.to_state_transform(new_state)
         if unbatched:
             state = state.squeeze(0)
