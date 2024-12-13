@@ -36,6 +36,8 @@ class Circuit(torch.nn.Module):
         super().__init__()
         self.name = ""
         self.named = True
+        if not hasattr(layers, "__iter__"):
+            layers = [layers]
         if num_qubits is not None:
             self.num_qubits = num_qubits
         else:
@@ -94,7 +96,9 @@ class Circuit(torch.nn.Module):
             ):
                 pass  # ignore measurements, as they act on all qubits anyway
             else:
-                raise ValueError(f"Unknown layer type {type(layer)}, number of qubits could not be inferred. Pass :code:`num_qubits` to the circuit.")
+                raise ValueError(
+                    f"Unknown layer type {type(layer)}, number of qubits could not be inferred. Pass :code:`num_qubits` to the circuit."
+                )
         if len(qubits) == 0:
             raise ValueError(
                 "Number of qubits could not be inferred from layers. Please provide num_qubits to the circuit directly."

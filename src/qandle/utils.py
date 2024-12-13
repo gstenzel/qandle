@@ -7,10 +7,8 @@ def reduce_dot(*args):
     """
     Compute the dot product of a series of matrices.
     """
-    # matrix = args[0]
-    # for sub_matrix in args[1:]:
-    #     matrix = torch.matmul(sub_matrix, matrix)
-    # return matrix
+    if len(args) == 1:
+        return args[0]
     return torch.linalg.multi_dot(args).T
 
 
