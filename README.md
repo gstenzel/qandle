@@ -1,3 +1,6 @@
+# Disclaimer: THIS REPO IS CURRENTLY EXPECTING SOME DIFFICULTIES WHEN SPLITTING CIRCUIT. 
+WE ARE LOOKING FORWARD TO IMPROVE THE SITUATION IN THE UPCOMING RELEASE. PLEASE STAY TUNED AND LEAVE A STAR :star: TO BE NOTIFIED ONCE OUR FIXES GO LIVE.
+
 # QANDLE
 **QANDLE** is a fast and simple quantum state-vector simulator for hybrid machine learning using the PyTorch library.
 Documentation and examples can be found in the [QANDLE documentation](https://gstenzel.github.io/qandle/), the code resides on [GitHub](https://github.com/gstenzel/qandle).
