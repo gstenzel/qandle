@@ -126,6 +126,21 @@ The MPS implementation:
 - Provides seamless conversion between MPS and state vector representations
 - Maintains numerical precision comparable to state vector simulation
 
+## Current Limitations
+
+### Gradient Support
+The current MPS implementation has limited gradient support due to the conversion operations between MPS and state vector representations. For machine learning applications requiring automatic differentiation, use the standard state vector mode:
+
+```python
+# For gradient-based optimization, use state vectors
+circuit = qandle.Circuit(gates, num_qubits=n, use_mps=False)  # Default
+```
+
+### Performance Considerations
+- MPS is most beneficial for systems with limited entanglement
+- Two-qubit gates on non-adjacent qubits fall back to state vector operations
+- For small systems (< 5 qubits), state vectors may be more efficient
+
 ## Future Enhancements
 
 Planned improvements include:
