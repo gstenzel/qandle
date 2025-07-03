@@ -32,10 +32,12 @@ class Circuit(torch.nn.Module):
         num_qubits=None,
         split_max_qubits=0,
         circuit=None,
+        use_mps=False,
     ):
         super().__init__()
         self.name = ""
         self.named = True
+        self.use_mps = use_mps
         if not hasattr(layers, "__iter__"):
             layers = [layers]
         if num_qubits is not None:
@@ -54,7 +56,7 @@ class Circuit(torch.nn.Module):
                     ),
                 )
             else:
-                self.circuit = UnsplittedCircuit(self.num_qubits, layers)
+                self.circuit = UnsplittedCircuit(self.num_qubits, layers, use_mps=use_mps)
 
     def forward(self, state=None, **kwargs):
         return self.circuit.forward(state, **kwargs)
@@ -139,14 +141,28 @@ class UnsplittedCircuit(torch.nn.Module):
     Main class for quantum circuits. This class is a torch.nn.Module, so it can be used like any other PyTorch module.
     """
 
-    def __init__(self, num_qubits: int, layers: list):
+    def __init__(self, num_qubits: int, layers: list, use_mps: bool = False):
         """
         Create a new quantum circuit, building all layers.
+        
+        Args:
+            num_qubits: Number of qubits in the circuit
+            layers: List of operators to apply
+            use_mps: Whether to use Matrix Product State representation instead of state vectors
         """
         super().__init__()
         self.num_qubits = num_qubits
-        self.state = torch.zeros(2**num_qubits, dtype=torch.complex64)
-        self.state[0] = 1
+        self.use_mps = use_mps
+        
+        if use_mps:
+            from . import mps
+            self.mps_state = mps.create_zero_state(num_qubits)
+            self.state = None  # Not used when use_mps=True
+        else:
+            self.state = torch.zeros(2**num_qubits, dtype=torch.complex64)
+            self.state[0] = 1
+            self.mps_state = None
+            
         layers_built = self._build_layers(layers, num_qubits)
         self.layers = torch.nn.ModuleList(layers_built)
 
@@ -164,14 +180,48 @@ class UnsplittedCircuit(torch.nn.Module):
         """
         Run the circuit. If state is None, the initial state is used. Supply specific inputs to specific gates using the kwargs, of the form name:torch.Tensor
         """
-        if state is None:
-            state = self.state
-        for mod in self.layers:
-            if mod.named:
-                state = mod(state, **kwargs)
+        if self.use_mps:
+            from . import mps
+            
+            if state is None:
+                current_mps = self.mps_state
             else:
-                state = mod(state)
-        return state
+                # Convert input state to MPS if needed
+                if hasattr(state, 'tensors'):  # Already MPS
+                    current_mps = state
+                else:
+                    current_mps = mps.state_vector_to_mps(state)
+            
+            for mod in self.layers:
+                if hasattr(mod, 'forward_mps'):
+                    if mod.named:
+                        # For now, named parameters still use state vector approach
+                        state_vec = mps.mps_to_state_vector(current_mps)
+                        state_vec = mod(state_vec, **kwargs)
+                        current_mps = mps.state_vector_to_mps(state_vec)
+                    else:
+                        current_mps = mod.forward_mps(current_mps)
+                else:
+                    # Fallback to state vector
+                    state_vec = mps.mps_to_state_vector(current_mps)
+                    if mod.named:
+                        state_vec = mod(state_vec, **kwargs)
+                    else:
+                        state_vec = mod(state_vec)
+                    current_mps = mps.state_vector_to_mps(state_vec)
+            
+            # Return state vector for compatibility
+            return mps.mps_to_state_vector(current_mps)
+        else:
+            # Original state vector implementation
+            if state is None:
+                state = self.state
+            for mod in self.layers:
+                if mod.named:
+                    state = mod(state, **kwargs)
+                else:
+                    state = mod(state)
+            return state
 
     def to_qasm(self) -> qasm.QasmRepresentation:
         reps = []

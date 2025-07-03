@@ -64,6 +64,14 @@ class BuiltOperator(Operator, torch.nn.Module, abc.ABC):
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         """Applies the operator to the state."""
 
+    def forward_mps(self, mps_state) -> 'MPSState':
+        """Applies the operator to an MPS state. Default implementation converts to state vector."""
+        from . import mps
+        # Default: convert to state vector, apply operator, convert back
+        state_vec = mps.mps_to_state_vector(mps_state)
+        result_vec = self.forward(state_vec)
+        return mps.state_vector_to_mps(result_vec)
+
     @abc.abstractmethod
     def to_matrix(self, **kwargs) -> torch.Tensor:
         """Returns the matrix representation of the operator, such that :code:`state @ matrix` is equivalent to :code:`forward(state)`. Might be significantly slower than forward."""
@@ -124,6 +132,11 @@ class BuiltU(BuiltOperator):
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         return state @ self.matrix
+
+    def forward_mps(self, mps_state) -> 'MPSState':
+        """Efficient MPS implementation for single-qubit gates."""
+        from . import mps
+        return mps.apply_single_qubit_gate(mps_state, self.qubit, self.original_matrix)
 
     def to_matrix(self, **kwargs) -> torch.Tensor:
         return self.matrix
@@ -296,6 +309,50 @@ class BuiltParametrizedOperator(BuiltOperator, abc.ABC):
                 # raise ValueError("One of the named matrices received batched input, but the state is not batched. Please batch the state and the named parameters or neither.")
             res = (state.unsqueeze(1) @ mat).squeeze(1)
         return res
+
+    def forward_mps(self, mps_state, **kwargs) -> 'MPSState':
+        """Efficient MPS implementation for parametrized single-qubit gates."""
+        from . import mps
+        # For parametrized gates, we need to extract the single-qubit gate matrix
+        # from the full system matrix
+        
+        # Get parameter value
+        if self.named:
+            t = kwargs[self.name] / 2  # type: ignore
+        else:
+            t = self.remapping(self.theta) / 2
+            
+        # Get the matrix builder components for the single qubit
+        # The matrix builder gives us matrices for the full system, but we want just the 2x2 gate
+        a, b, a_op, b_op = self.matrix_builder()
+        
+        # The single-qubit gate matrix for this specific gate type
+        # For RX: [[cos(θ/2), -i*sin(θ/2)], [-i*sin(θ/2), cos(θ/2)]]
+        # For RY: [[cos(θ/2), -sin(θ/2)], [sin(θ/2), cos(θ/2)]]
+        # For RZ: [[e^(-iθ/2), 0], [0, e^(iθ/2)]]
+        
+        # Build the 2x2 gate matrix directly based on gate type
+        gate_type = self.__class__.__name__
+        if gate_type == 'BuiltRX':
+            gate_2x2 = torch.tensor([
+                [b_op(t), a_op(t) * (-1j)],
+                [a_op(t) * (-1j), b_op(t)]
+            ], dtype=torch.cfloat)
+        elif gate_type == 'BuiltRY':
+            gate_2x2 = torch.tensor([
+                [b_op(t), -a_op(t)],
+                [a_op(t), b_op(t)]
+            ], dtype=torch.cfloat)
+        elif gate_type == 'BuiltRZ':
+            gate_2x2 = torch.tensor([
+                [a_op(t), 0],
+                [0, b_op(t)]
+            ], dtype=torch.cfloat)
+        else:
+            # Fallback: use default implementation
+            return super().forward_mps(mps_state)
+        
+        return mps.apply_single_qubit_gate(mps_state, self.qubit, gate_2x2)
 
     @abc.abstractmethod
     def matrix_builder(self) -> matrixbuilder:
@@ -556,6 +613,17 @@ class BuiltCNOT(BuiltOperator):
 
     def forward(self, state: torch.Tensor) -> torch.Tensor:
         return state @ self._M
+
+    def forward_mps(self, mps_state) -> 'MPSState':
+        """Efficient MPS implementation for CNOT gates."""
+        from . import mps
+        cnot_matrix = torch.tensor([
+            [1, 0, 0, 0],
+            [0, 1, 0, 0], 
+            [0, 0, 0, 1],
+            [0, 0, 1, 0]
+        ], dtype=torch.cfloat)
+        return mps.apply_two_qubit_gate(mps_state, self.c, self.t, cnot_matrix)
 
     def __str__(self) -> str:
         return CNOT(self.c, self.t).__str__()

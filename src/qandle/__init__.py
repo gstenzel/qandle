@@ -12,6 +12,7 @@ from .errors import *
 from .operators import *
 from .utils import *
 from .qasm import *
+from . import mps
 
 
 def __reimport():  # pragma: no cover
