@@ -15,6 +15,7 @@ __all__ = [
     "RY",
     "RZ",
     "CNOT",
+    "CCNOT",
     "CZ",
     "Reset",
     "SWAP",
@@ -411,6 +412,27 @@ class CNOT(UnbuiltOperator):
 
     def build(self, num_qubits, **kwargs) -> "BuiltCNOT":
         return BuiltCNOT(control=self.c, target=self.t, num_qubits=num_qubits)
+    
+
+class CCNOT(UnbuiltOperator):
+    """CCNOT gate."""
+
+    def __init__(self, control1: int, control2: int, target: int):
+        assert control1 != target, "Control and target must be different"
+        assert control2 != target, "Control and target must be different"
+        assert control1 != control2, "Controls must be different"
+        self.c1 = control1
+        self.c2 = control2
+        self.t = target
+
+    def __str__(self) -> str:
+        return f"CCNOT {self.c1}|{self.c2}|{self.t}"
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return qasm.QasmRepresentation(gate_str=f"ccx q[{self.c1}], q[{self.c2}], q[{self.t}]")
+
+    def build(self, num_qubits, **kwargs) -> "BuiltCCNOT":
+        return BuiltCCNOT(control1=self.c1, control2=self.c2, target=self.t, num_qubits=num_qubits)
 
 
 class Invert(UnbuiltOperator):
@@ -567,6 +589,50 @@ class BuiltCNOT(BuiltOperator):
         return self._M
 
 
+class BuiltCCNOT(BuiltOperator):
+    def __init__(self, control1: int, control2: int, target: int, num_qubits: int):
+        super().__init__()
+        self.c1 = control1
+        self.c2 = control2
+        self.t = target
+        self.num_qubits = num_qubits
+        self.register_buffer(
+            "_M", self._calculate_matrix(control1, control2, target, num_qubits), persistent=False
+        ) 
+
+    @staticmethod
+    def _calculate_matrix(c1: int, c2: int, t: int, num_qubits: int):
+        dim = 2 ** num_qubits
+        indices = torch.arange(dim)
+        M = torch.zeros((dim, dim)) * 0j
+        #convention to big-endian
+        c1 = num_qubits - c1 - 1
+        c2 = num_qubits - c2 - 1
+        t = num_qubits - t - 1
+
+        control1_mask = 1 << c1
+        control2_mask = 1 << c2
+        target_mask = 1 << t
+
+        are_controls_on = ((indices & control1_mask) != 0) & ((indices & control2_mask) != 0)
+        source_indices = indices
+        target_indices = torch.where(are_controls_on, indices ^ target_mask, indices)
+
+        M[source_indices, target_indices] = 1
+        return M
+
+    def forward(self, state: torch.Tensor) -> torch.Tensor:
+        return state @ self._M
+
+    def __str__(self) -> str:
+        return CCNOT(self.c1, self.c2, self.t).__str__()
+
+    def to_qasm(self) -> qasm.QasmRepresentation:
+        return CCNOT(self.c1, self.c2, self.t).to_qasm()
+
+    def to_matrix(self, **kwargs) -> torch.Tensor:
+        return self._M
+
 class BuiltCZ(BuiltOperator):
     def __init__(self, control: int, target: int, num_qubits: int):
         super().__init__()
@@ -717,6 +783,7 @@ BUILT_CLASS_RELATION = rdict(
         RY: BuiltRY,
         RZ: BuiltRZ,
         CNOT: BuiltCNOT,
+        CCNOT: BuiltCCNOT,
         Reset: BuiltReset,
         U: BuiltU,
         SWAP: BuiltSWAP,

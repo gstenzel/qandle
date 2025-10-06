@@ -65,6 +65,29 @@ def draw(circuit) -> str:
                 for w in _all_w:
                     if not config.DRAW_SHIFT_LEFT:
                         qubits[w] += config.DRAW_DASH * 2
+            elif isinstance(gate, (op.CCNOT, op.BuiltCCNOT)):
+                controls = [gate.c1, gate.c2]
+                target = gate.t
+                span_min, span_max = min(*controls, target), max(*controls, target)
+                for q in range(span_min, span_max + 1):
+                    _all_w.discard(q)
+                longest = max(len(qubits[q]) for q in range(span_min, span_max + 1))
+                if config.DRAW_SHIFT_LEFT:
+                    for q in range(span_min, span_max + 1):
+                        qubits[q] += config.DRAW_DASH * (longest - len(qubits[q]))
+                for q in range(span_min, span_max + 1):
+                    if q in controls:
+                        qubits[q] += config.DRAW_DASH + "⬤"
+                    elif q == target:
+                        qubits[q] += config.DRAW_DASH + "⊕"
+                    else:
+                        if config.DRAW_CROSS_BETWEEN_CNOT:
+                            qubits[q] += config.DRAW_DASH + "┼"
+                        else:
+                            qubits[q] += config.DRAW_DASH * 2
+                for w in _all_w:
+                    if not config.DRAW_SHIFT_LEFT:
+                        qubits[w] += config.DRAW_DASH * 2
             elif isinstance(gate, einops.layers.torch.Rearrange):
                 pass  # ignore einops layers
             else:

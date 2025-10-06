@@ -4,8 +4,36 @@ from qandle import splitter
 from qandle import operators
 from qandle import qasm
 from qandle import utils
+from qandle.backends import (
+    MPSBackend,
+    QuantumBackend,
+    StateVectorBackend,
+)
 import warnings
 import typing
+
+_BACKENDS = {
+    "statevector": StateVectorBackend,
+    "mps": MPSBackend,
+}
+
+
+def _make_backend(backend: str | QuantumBackend, n_qubits: int, **kwargs) -> QuantumBackend:
+    if isinstance(backend, QuantumBackend):
+        return backend
+    return _BACKENDS[backend](n_qubits=n_qubits, **kwargs)
+
+
+def _apply_backend_layer(layer: torch.nn.Module, backend: QuantumBackend, **kwargs) -> None:
+    """Apply a built layer on a :class:`QuantumBackend`."""
+    if hasattr(layer, "qubit"):
+        backend.apply_1q(layer.to_matrix(**kwargs), layer.qubit)
+    elif hasattr(layer, "c") and hasattr(layer, "t") and not hasattr(layer, "c2"):
+        backend.apply_2q(layer.to_matrix(**kwargs), layer.c, layer.t)
+    elif hasattr(layer, "a") and hasattr(layer, "b"):
+        backend.apply_2q(layer.to_matrix(**kwargs), layer.a, layer.b)
+    else:
+        raise NotImplementedError("Only 1- and 2-qubit gates are supported.")
 
 __all__ = ["Circuit"]
 
@@ -56,7 +84,32 @@ class Circuit(torch.nn.Module):
             else:
                 self.circuit = UnsplittedCircuit(self.num_qubits, layers)
 
-    def forward(self, state=None, **kwargs):
+    def forward(
+        self,
+        state=None,
+        *,
+        backend: str | QuantumBackend | None = None,
+        backend_kwargs: dict | None = None,
+        diff_method: str | None = None,
+        **kwargs,
+    ):
+        if backend is not None:
+            be = _make_backend(backend, self.num_qubits, **(backend_kwargs or {}))
+            circ = (
+                self.circuit
+                if isinstance(self.circuit, UnsplittedCircuit)
+                else self.circuit.decompose()
+            )
+            be.allocate(self.num_qubits)
+            for layer in circ.layers:
+                _apply_backend_layer(layer, be, **kwargs)
+            return be
+
+        if diff_method == "parameter_shift":
+            from .gradients import parameter_shift_forward
+
+            return parameter_shift_forward(self.circuit, state, **kwargs)
+
         return self.circuit.forward(state, **kwargs)
 
     def to_matrix(self, **kwargs):

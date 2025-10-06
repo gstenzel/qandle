@@ -10,8 +10,12 @@ from . import config
 from .convolution import *
 from .errors import *
 from .operators import *
+from .noise import *
+from .simulators import *
 from .utils import *
 from .qasm import *
+
+from .utils_gates import H, X, Y, Z, S, T
 
 
 def __reimport():  # pragma: no cover

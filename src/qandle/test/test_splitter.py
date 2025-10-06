@@ -1,6 +1,7 @@
 import torch
 import qandle
 from qandle.test import check_qasm
+import numpy as np
 
 op = qandle.operators
 
@@ -31,6 +32,42 @@ def get_circuit_cnot10():
     )
 
 
+def get_circuit_ccnot_num_qubits(num_qubits=10):
+    assert num_qubits >=8, "num_qubits must be >= 8"
+    return qandle.Circuit(
+        [op.CCNOT(i, (i + np.random.randint(1, 2)) % num_qubits, (i + np.random.randint(3, 5)) % num_qubits) for i in
+         range(num_qubits)], num_qubits=num_qubits
+    )
+
+
+def get_circuit_ccnot3():
+    return qandle.Circuit(
+        num_qubits=3,
+        layers=[
+            op.CCNOT(0, 1, 2),
+            op.CCNOT(1, 2, 0),
+            op.CCNOT(2, 0, 1),
+        ])
+
+def test_circuit_ccnot():
+
+    c = get_circuit_ccnot3()
+    split_c = c.split(max_qubits=2)
+    inp = torch.rand(2 ** 3, dtype=torch.cfloat)
+    inp = inp / torch.linalg.norm(inp, dim=-1, keepdim=True)
+    res_c = c(inp)
+    res_split = split_c(inp)
+    assert torch.allclose(res_c, res_split, rtol=1e-6, atol=1e-6), f"Results in splitted CCNOT (3 qubits) do not match: {res_c} vs {res_split}"
+
+    c_large = get_circuit_ccnot_num_qubits()
+    split_c_large = c_large.split(max_qubits=5)
+    inp_large = torch.rand(2 ** c_large.num_qubits, dtype=torch.cfloat)
+    inp_large = inp_large / torch.linalg.norm(inp_large, dim=-1, keepdim=True)
+    res_c_large = c_large(inp_large)
+    res_split_large = split_c_large(inp_large)
+    assert torch.allclose(res_c_large, res_split_large, rtol=1e-6, atol=1e-6), f"Results in splitted CCNOT (10 qubits) do not match: {res_c_large} vs {res_split_large}"
+
+
 def test_nested_circuits():
     c1 = qandle.Circuit(
         layers=[
@@ -45,7 +82,7 @@ def test_nested_circuits():
     )
     c1c2 = qandle.Circuit(layers=[c1, qandle.RZ(0), c2], num_qubits=3)
     split = c1c2.split(max_qubits=3)
-    inp = torch.rand(2**3, dtype=torch.cfloat)
+    inp = torch.rand(2 ** 3, dtype=torch.cfloat)
     inp = inp / torch.linalg.norm(inp, dim=-1, keepdim=True)
     res_c1c2 = c1c2(inp)
     res_split = split(inp)
@@ -55,7 +92,7 @@ def test_nested_circuits():
 def test_splitter_1():
     orig_c = get_circuit_cnot10()
     split_c = orig_c.split(max_qubits=5)
-    inp = torch.rand(2**orig_c.num_qubits, dtype=torch.cfloat)
+    inp = torch.rand(2 ** orig_c.num_qubits, dtype=torch.cfloat)
     inp = inp / torch.linalg.norm(inp, dim=-1, keepdim=True)
     orig_res = orig_c(inp)
     split_res = split_c(inp)
@@ -82,7 +119,7 @@ def test_splitter_2():
 def test_splitter_small():
     su = qandle.SU(qubits=list(range(3)), reps=2, rotations=["rx", "ry"])
     orig_c_big = qandle.Circuit(layers=su.decompose()).decompose()
-    inp = torch.rand(2**orig_c_big.num_qubits, dtype=torch.cfloat)
+    inp = torch.rand(2 ** orig_c_big.num_qubits, dtype=torch.cfloat)
     inp = inp / torch.linalg.norm(inp, dim=-1, keepdim=True)
     split_t2 = orig_c_big.split(max_qubits=2)
     split_t3 = orig_c_big.split(max_qubits=3)
@@ -108,3 +145,4 @@ def test_circuit_dummy():
     )
     assert isinstance(c.circuit, qandle.qcircuit.SplittedCircuit)
     assert len(c.circuit.subcircuits) == 2
+
